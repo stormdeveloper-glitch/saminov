@@ -1,15 +1,21 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from dotenv import load_dotenv
 import json
 import os
-from dotenv import load_dotenv()
 from datetime import datetime
 import random 
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
 TOKEN_ENV = os.environ.get("BOT_TOKEN")
   
-BOT_TOKEN = TOKEN_ENV or "8656932434:AAFtXLsSKKqC2asPYhuqkfMv2gfp4hiT0Ow"
+if not TOKEN_ENV:
+    print("⚠️ BOT_TOKEN muhitdan topilmadi, vaqtinchalik tokendan foydalanilmoqda.")
+else:
+    BOT_TOKEN = TOKEN_ENV
+    print(f"✅ BOT_TOKEN yuklandi: {BOT_TOKEN[:10]}...")
+
 ADMINS = [6340253146, ]
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -2262,6 +2268,4 @@ if __name__ == "__main__":
         print("✅ Bot ishga tushdi...")
         bot.infinity_polling(timeout=10, long_polling_timeout=5)
     except Exception as e:
-
         print(f"❌ Botda kutilmagan xatolik: {e}")
-
