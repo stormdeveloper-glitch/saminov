@@ -2,9 +2,11 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import json
 import os
+from dotenv import load_env()
 from datetime import datetime
 import random 
 
+load_env()
 TOKEN_ENV = os.environ.get("BOT_TOKEN")
   
 BOT_TOKEN = TOKEN_ENV or "8656932434:AAFtXLsSKKqC2asPYhuqkfMv2gfp4hiT0Ow"
@@ -2260,4 +2262,5 @@ if __name__ == "__main__":
         print("✅ Bot ishga tushdi...")
         bot.infinity_polling(timeout=10, long_polling_timeout=5)
     except Exception as e:
+
         print(f"❌ Botda kutilmagan xatolik: {e}")
