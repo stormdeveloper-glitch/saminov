@@ -2,11 +2,11 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import json
 import os
-from dotenv import load_env()
+from dotenv import load_dotenv()
 from datetime import datetime
 import random 
 
-load_env()
+load_dotenv()
 TOKEN_ENV = os.environ.get("BOT_TOKEN")
   
 BOT_TOKEN = TOKEN_ENV or "8656932434:AAFtXLsSKKqC2asPYhuqkfMv2gfp4hiT0Ow"
@@ -2264,3 +2264,4 @@ if __name__ == "__main__":
     except Exception as e:
 
         print(f"❌ Botda kutilmagan xatolik: {e}")
+
