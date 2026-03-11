@@ -1,23 +1,19 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from dotenv import load_dotenv
 import json
 import os
+from dotenv import load_dotenv  
 from datetime import datetime
 import random 
+import re
+from urllib.request import urlopen
+        
+load_dotenv()
 
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
-
-TOKEN_ENV = os.environ.get("BOT_TOKEN")
-  
-if not TOKEN_ENV:
-    print("⚠️ BOT_TOKEN muhitdan topilmadi, vaqtinchalik tokendan foydalanilmoqda.")
-else:
-    BOT_TOKEN = TOKEN_ENV
-    print(f"✅ BOT_TOKEN yuklandi: {BOT_TOKEN[:10]}...")
-
-ADMINS = [6340253146, ]
+TOKEN_ENV = os.getenv("BOT_TOKEN")
+ADMINS = [6340253146]
 bot = telebot.TeleBot(BOT_TOKEN)
+TEACHER_PASSWORD = os.getenv("TEACHER_PASSWORD")
 
 DB_FILE = "db.json"
 user_languages = {}  # {user_id: language}
@@ -34,6 +30,26 @@ def save_db(data):
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
+
+def all_admins():
+    db = load_db()
+    dynamic = set(db.get("admins", []))
+    return list(set(ADMINS) | dynamic)
+
+
+def add_admin(user_id):
+    db = load_db()
+    admins = set(db.get("admins", []))
+    admins.add(int(user_id))
+    db["admins"] = list(admins)
+    save_db(db)
+
+
+def is_admin(user_id):
+    return int(user_id) in set(all_admins())
+
+def is_primary_admin(user_id):
+    return int(user_id) in set(ADMINS)
 
 # --- AUTO LANGUAGE DETECTION ---
 def detect_and_set_language(message):
@@ -842,7 +858,6 @@ subjects_list = list(set([teacher['subject'] for teacher in teachers.values()]))
 subjects = {
     "python": "💻 Python dasturlash (0 dan professional darajagacha)",
     "web": "🌐 Web dasturlash (HTML, CSS, JS, React)",
-    "android": "📱 Android dasturlash (mobil ilova yaratish)",
     "computer": "🖥 Kompyuter savodxonligi (0 dan o‘rgatish)",
     "Ingliz_tili": "🇬🇧 Ingliz tili (0 dan o‘rgatish)",
     "Rus_tili": "🇷🇺 Rus tili (0 dan o‘rgatish)",
@@ -850,10 +865,34 @@ subjects = {
     "Koreys_tili": "🇰🇷 Koreys tili (0 dan o‘rgatish va professional)",
     "Biologiya": "🧬 Biologiya (maktab va oliy biologiya)",
     "Kimyo": "⚗️ Kimyo (maktab va oliy kimyo)",
-    "Fizika": "🔭 Fizika (maktab va oliy fizika)",
     "Tarix": "📜 Tarix (maktab va oliy tarix)",
-    "Geografiya": "🌍 Geografiya (maktab va oliy geografiya)",
 }
+
+subject_keywords = {
+    "python": ["python", "py"],
+    "web": ["web", "frontend", "react", "html", "css", "javascript", "js"],
+    "computer": ["kompyuter", "kompyuter savodxonligi"],
+    "Ingliz_tili": ["ingliz", "english"],
+    "Rus_tili": ["rus", "russian"],
+    "Matematika": ["matematika", "math"],
+    "Koreys_tili": ["koreys", "korean"],
+    "Biologiya": ["biologiya", "biology"],
+    "Kimyo": ["kimyo", "chemistry"],
+    "Tarix": ["tarix", "history"],
+    # Geografiya/Fizika/Android olib tashlandi
+}
+
+def get_course_price(key):
+    prog = {"python", "web"}
+    return 400000 if key in prog else 300000
+
+def find_subject_key(text):
+    t = (text or "").lower()
+    for k, kws in subject_keywords.items():
+        for w in kws:
+            if w in t:
+                return k
+    return None
 
 # --- QUIZ DATA ---
 quiz_data = {
@@ -1111,6 +1150,12 @@ def generate_chatbot_reply(user_id, text):
     lang = get_user_lang(user_id)
     text_l = (text or "").lower()
 
+    skey = find_subject_key(text_l)
+    if skey:
+        price = get_course_price(skey)
+        name = subjects.get(skey, skey)
+        return f"{name}\nNarxi: {price} so'm\nKurs mavjud.\nKursga yozilmoqchimisiz?"
+
     # Check knowledge base for keywords
     kb = assistant_knowledge.get(lang, assistant_knowledge.get("O'zbek", {}))
     for key, ans in kb.items():
@@ -1167,7 +1212,9 @@ def main_menu_lang(lang="O'zbek"):
             "site": "🌐 Veb-sayt",
             "telegram": "📱 Telegram",
             "instagram": "📸 Instagram",
-            "facebook": "📘 Facebook"
+            "facebook": "📘 Facebook",
+            "admin": "🛠 Admin",
+            "teacher_panel": "👨‍🏫 O‘qituvchi"
         },
         "English": {
             "courses": "📚 Courses",
@@ -1185,7 +1232,9 @@ def main_menu_lang(lang="O'zbek"):
             "site": "🌐 Website",
             "telegram": "📱 Telegram",
             "instagram": "📸 Instagram",
-            "facebook": "📘 Facebook"
+            "facebook": "📘 Facebook",
+            "admin": "🛠 Admin",
+            "teacher_panel": "👨‍🏫 Teacher"
         },
         "Русский": {
             "courses": "📚 Курсы",
@@ -1203,7 +1252,9 @@ def main_menu_lang(lang="O'zbek"):
             "site": "🌐 Сайт",
             "telegram": "📱 Telegram",
             "instagram": "📸 Instagram",
-            "facebook": "📘 Facebook"
+            "facebook": "📘 Facebook",
+            "admin": "🛠 Админ",
+            "teacher_panel": "👨‍🏫 Преподаватель"
         }
     }
 
@@ -1234,6 +1285,8 @@ def main_menu_lang(lang="O'zbek"):
         InlineKeyboardButton(l["arizalar"], callback_data="arizalar"),
         InlineKeyboardButton(l["check"], callback_data="check")
     )
+    markup.add(InlineKeyboardButton(l["teacher_panel"], callback_data="teacher_panel"))
+    markup.add(InlineKeyboardButton(l["admin"], callback_data="admin"))
     markup.add(InlineKeyboardButton(l["contact"], url="https://t.me/saminovschool"))
     markup.add(InlineKeyboardButton(l["site"], url="https://saminovschool.uz"))
     markup.add(InlineKeyboardButton(l["telegram"], url="https://t.me/saminovschool"))
@@ -1253,6 +1306,72 @@ check_form_states = {}  # {user_id: {"name": str, "teacher": str, "subject": str
 user_quiz_state = {}
 quiz_question_time = {}  # Track when each question was shown
 QUIZ_TIME_LIMIT = 30  # seconds
+admin_edit_state = {}
+admin_notify_state = {}
+admin_test_state = {}
+admin_delete_state = {}
+teacher_sessions = set()
+
+def get_quiz_uploads():
+    db = load_db()
+    return db.get("quiz_uploads", {})
+
+def set_quiz_upload(subject_key, quiz_obj):
+    db = load_db()
+    q = db.get("quiz_uploads", {})
+    q[subject_key] = quiz_obj
+    db["quiz_uploads"] = q
+    save_db(db)
+
+def get_quiz(quiz_key):
+    if quiz_key in quiz_data:
+        return quiz_data[quiz_key]
+    if quiz_key.startswith("db:"):
+        subj = quiz_key.split(":", 1)[1]
+        uploads = get_quiz_uploads()
+        return uploads.get(subj)
+    return None
+
+def has_quiz(quiz_key):
+    if quiz_key in quiz_data:
+        return True
+    if quiz_key.startswith("db:"):
+        subj = quiz_key.split(":", 1)[1]
+        return subj in get_quiz_uploads()
+    return False
+
+def parse_test_text(text):
+    blocks = re.split(r"\n\s*\n", text.strip())
+    questions = []
+    for blk in blocks:
+        lines = [l.strip() for l in blk.splitlines() if l.strip()]
+        if not lines:
+            continue
+        q = lines[0]
+        opts = []
+        correct = None
+        for l in lines[1:]:
+            m = re.match(r"^(\d+)[\)\.\:\-\s]+(.*)$", l)
+            if m:
+                opts.append(m.group(2).strip())
+                continue
+            m2 = re.search(r"(correct|javob)\s*[:\-]\s*(\d+)", l, flags=re.I)
+            if m2:
+                try:
+                    correct = int(m2.group(2)) - 1
+                except:
+                    pass
+        if len(opts) >= 2:
+            if correct is None or correct < 0 or correct >= len(opts):
+                correct = 0
+            questions.append({"q": q, "options": opts, "correct": correct})
+    return questions
+
+def download_telegram_file(file_id):
+    f = bot.get_file(file_id)
+    url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{f.file_path}"
+    data = urlopen(url).read()
+    return data
 
 def get_check_state(user_id):
     return check_form_states.get(user_id, {})
@@ -1262,6 +1381,81 @@ def set_check_state(user_id, data):
 
 def clear_check_state(user_id):
     check_form_states.pop(user_id, None)
+
+def get_teacher_links():
+    db = load_db()
+    return db.get("teacher_links", {})
+
+def set_teacher_link(user_id, link):
+    db = load_db()
+    links = db.get("teacher_links", {})
+    links[str(user_id)] = link
+    db["teacher_links"] = links
+    save_db(db)
+
+def is_teacher(user_id):
+    links = get_teacher_links()
+    return str(user_id) in links
+
+def get_teacher_subject_for_user(user_id):
+    links = get_teacher_links()
+    l = links.get(str(user_id))
+    if not l:
+        return None
+    if l.get("type") == "base":
+        key = l.get("key")
+        t = apply_teacher_override(key, teachers.get(key, {}))
+        return l.get("subject") or t.get("subject_key") or key
+    if l.get("type") == "custom":
+        dbt = get_custom_teachers()
+        for t in dbt:
+            if t.get("id") == l.get("id"):
+                return l.get("subject") or t.get("subject")
+    return None
+
+def get_teacher_passwords():
+    db = load_db()
+    return db.get("teacher_passwords", {})
+
+def set_teacher_password_for_ref(ref, pwd):
+    db = load_db()
+    tps = db.get("teacher_passwords", {})
+    tps[ref] = pwd
+    db["teacher_passwords"] = tps
+    save_db(db)
+
+def delete_teacher_password_for_ref(ref):
+    db = load_db()
+    tps = db.get("teacher_passwords", {})
+    if ref in tps:
+        del tps[ref]
+        db["teacher_passwords"] = tps
+        save_db(db)
+
+def find_teacher_ref_by_password(pwd):
+    tps = get_teacher_passwords()
+    for ref, p in tps.items():
+        if p == pwd:
+            return ref
+    return None
+
+def teacher_ref_to_name(ref):
+    try:
+        kind, val = ref.split(":", 1)
+    except ValueError:
+        return ref
+    if kind == "base":
+        t = apply_teacher_override(val, teachers.get(val, {}))
+        return format_full_name(t) or val
+    if kind == "custom":
+        try:
+            tid = int(val)
+        except:
+            return ref
+        for t in get_custom_teachers():
+            if t.get("id") == tid:
+                return t.get("name", f"custom:{tid}")
+    return ref
 
 # --- LANGUAGE SELECTION ---
 def language_menu():
@@ -1383,6 +1577,18 @@ def handle_text_message(message):
         bot.send_message(message.chat.id, reply, reply_markup=markup)
         return
 
+    skey = find_subject_key(lower)
+    if skey:
+        price = get_course_price(skey)
+        name = subjects.get(skey, skey)
+        reply = f"{name}\nNarxi: {price} so'm\nKurs mavjud.\nKursga yozilmoqchimisiz?"
+        mk = InlineKeyboardMarkup()
+        mk.add(
+            InlineKeyboardButton("✅ Ha", callback_data=f"qa_apply_subject:{skey}"),
+            InlineKeyboardButton("❌ Yo'q", callback_data="qa_apply_no")
+        )
+        bot.send_message(message.chat.id, reply, reply_markup=mk)
+        return
     # Oddiy rejim (asosiy menyu bilan)
     reply = generate_chatbot_reply(user_id, lower)
     bot.send_message(message.chat.id, reply, reply_markup=main_menu_lang(get_user_lang(user_id)))
@@ -1498,7 +1704,7 @@ def callback(call):
 
     # APPROVE CHECK
     if call.data.startswith("approve_check:"):
-        if call.from_user.id not in ADMINS:
+        if not is_admin(call.from_user.id):
             bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
             return
         try:
@@ -1544,7 +1750,7 @@ def callback(call):
 
     # REJECT CHECK
     if call.data.startswith("reject_check:"):
-        if call.from_user.id not in ADMINS:
+        if not is_admin(call.from_user.id):
             bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
             return
         try:
@@ -1651,6 +1857,8 @@ def callback(call):
     elif call.data.startswith("subject:"):
         key = call.data.split(":", 1)[1]
         info = subjects.get(key, "Ma'lumot topilmadi.")
+        price = get_course_price(key)
+        info = f"{info}\nNarxi: {price} so'm"
         bot.edit_message_text(
             info,
             call.message.chat.id,
@@ -1662,7 +1870,11 @@ def callback(call):
     elif call.data == "teachers":
         markup = InlineKeyboardMarkup(row_width=1)
         for key in teachers:
-            markup.add(InlineKeyboardButton(teachers[key]["name"], callback_data=key))
+            t = apply_teacher_override(key, teachers[key])
+            nm = format_full_name(t)
+            price = t.get("price")
+            label = f"{nm} — {price}" if price else nm
+            markup.add(InlineKeyboardButton(label, callback_data=key))
         bot.edit_message_text(
             "👨‍🏫 O‘qituvchini tanlang:",
             call.message.chat.id,
@@ -1671,8 +1883,10 @@ def callback(call):
         )
 
     elif call.data in teachers:
+        t = apply_teacher_override(call.data, teachers[call.data])
+        info = t.get("info") or f"👤 {(t.get('name','') + (' ' + t.get('surname','') if t.get('surname') else '')).strip()}\n📂 {t.get('subject','')}"
         bot.edit_message_text(
-            teachers[call.data]["info"],
+            info,
             call.message.chat.id,
             call.message.message_id,
             reply_markup=back_button()
@@ -1705,6 +1919,461 @@ def callback(call):
             reply_markup=markup
         )
 
+    elif call.data == "admin":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        m = InlineKeyboardMarkup(row_width=2)
+        m.add(
+            InlineKeyboardButton("📊 Statistika", callback_data="admin_stats"),
+            InlineKeyboardButton("🎲 Tasodifiy g'olib", callback_data="admin_random")
+        )
+        m.add(
+            InlineKeyboardButton("➕ Admin qo'shish", callback_data="admin_add_admin"),
+            InlineKeyboardButton("👥 Adminlar", callback_data="admin_list_admins")
+        )
+        m.add(
+            InlineKeyboardButton("➕ O'qituvchi qo'shish", callback_data="admin_add_teacher"),
+            InlineKeyboardButton("👨‍🏫 O'qituvchilar", callback_data="admin_list_teachers")
+        )
+        m.add(InlineKeyboardButton("📢 E'lon yuborish", callback_data="admin_broadcast"))
+        m.add(InlineKeyboardButton("📄 Test yuklash (PDF/TXT)", callback_data="admin_test_upload"))
+        m.add(InlineKeyboardButton("👨‍🏫 O'qituvchi bo'limi", callback_data="admin_teachers_section"))
+        m.add(InlineKeyboardButton("🧩 Ma'lumotlarni tahrirlash", callback_data="admin_manage_data"))
+        bot.edit_message_text("🛠 Admin paneli", call.message.chat.id, call.message.message_id, reply_markup=m)
+
+    elif call.data == "admin_stats":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        subs = len(db.get("subscribers", []))
+        arizalar = db.get("arizalar", [])
+        checks = db.get("checks", [])
+        ariza_count = len(arizalar)
+        checks_pending = sum(1 for c in checks if c.get("status") == "kutilmoqda")
+        checks_ok = sum(1 for c in checks if c.get("status") == "tasdiqlandi")
+        checks_rej = sum(1 for c in checks if c.get("status") == "rad_etildi")
+        langs = db.get("user_languages", {})
+        msg = (
+            f"📊 Statistika\n"
+            f"👥 Obunachilar: {subs}\n"
+            f"📝 Arizalar: {ariza_count}\n"
+            f"🧾 Cheklar: {len(checks)}\n"
+            f"  • Kutilmoqda: {checks_pending}\n"
+            f"  • Tasdiqlangan: {checks_ok}\n"
+            f"  • Rad etilgan: {checks_rej}\n"
+            f"🌐 Tillar saqlangan: {len(langs)}"
+        )
+        bot.edit_message_text(msg, call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "admin_add_admin":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        msg = bot.send_message(call.message.chat.id, "🆔 Yangi admin user ID ni yozing:")
+        bot.register_next_step_handler(msg, admin_add_admin_step)
+
+    elif call.data == "admin_list_admins":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        ids = all_admins()
+        bot.edit_message_text("👥 Adminlar:\n" + "\n".join([str(i) for i in ids]), call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "admin_random":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        subs = db.get("subscribers", [])
+        if not subs:
+            bot.answer_callback_query(call.id, "Obunachilar topilmadi!")
+            return
+        winner = random.choice(subs)
+        bot.edit_message_text(f"🎉 Tasodifiy g'olib: {winner}", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "admin_add_teacher":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        msg = bot.send_message(call.message.chat.id, "👤 O'qituvchi ismini yozing:")
+        bot.register_next_step_handler(msg, teacher_add_name_step)
+
+    elif call.data == "admin_list_teachers":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        base = []
+        for k, t in teachers.items():
+            cur = apply_teacher_override(k, t)
+            nm = format_full_name(cur)
+            price = cur.get("price")
+            base.append(f"{nm}" + (f" — {price}" if price else ""))
+        dbt = get_custom_teachers()
+        names = base + [(t.get("name","") + (f" — {t.get('price')}" if t.get("price") else "")) for t in dbt]
+        bot.edit_message_text("👨‍🏫 O'qituvchilar:\n" + "\n".join(names), call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "admin_broadcast":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        msg = bot.send_message(call.message.chat.id, "📢 E'lon matnini yozing:")
+        bot.register_next_step_handler(msg, admin_broadcast_step)
+
+    elif call.data == "admin_manage_data":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        m = InlineKeyboardMarkup(row_width=2)
+        m.add(InlineKeyboardButton("🗑 Adminni o'chirish", callback_data="admin_remove_admin"))
+        m.add(
+            InlineKeyboardButton("✏️ O'qituvchini tahrirlash", callback_data="admin_teacher_edit")
+        )
+        m.add(
+            InlineKeyboardButton("🗑 O'qituvchini o'chirish", callback_data="admin_teacher_delete")
+        )
+        m.add(
+            InlineKeyboardButton("✏️ Arizani tahrirlash", callback_data="admin_ariza_edit"),
+            InlineKeyboardButton("🗑 Arizani o'chirish", callback_data="admin_ariza_delete")
+        )
+        m.add(InlineKeyboardButton("📩 Arizaga xabar yuborish", callback_data="admin_ariza_notify"))
+        m.add(InlineKeyboardButton("📢 Fan bo'yicha xabar", callback_data="admin_ariza_notify_subject"))
+        m.add(
+            InlineKeyboardButton("✏️ Chekni tahrirlash", callback_data="admin_check_edit"),
+            InlineKeyboardButton("🗑 Chekni o'chirish", callback_data="admin_check_delete")
+        )
+        m.add(InlineKeyboardButton("🗑 Obunachini o'chirish", callback_data="admin_subscriber_delete"))
+        bot.edit_message_text("🧩 Ma'lumotlarni tahrirlash", call.message.chat.id, call.message.message_id, reply_markup=m)
+
+    elif call.data == "admin_teachers_section":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        m = InlineKeyboardMarkup(row_width=2)
+        m.add(
+            InlineKeyboardButton("➕ O'qituvchi qo'shish", callback_data="admin_add_teacher"),
+            InlineKeyboardButton("👨‍🏫 O'qituvchilar", callback_data="admin_list_teachers")
+        )
+        m.add(
+            InlineKeyboardButton("✏️ O'qituvchini tahrirlash", callback_data="admin_teacher_edit"),
+            InlineKeyboardButton("🗑 O'qituvchini o'chirish", callback_data="admin_teacher_delete")
+        )
+        m.add(
+            InlineKeyboardButton("🔐 Parol o'rnatish", callback_data="admin_tp_setpwd"),
+            InlineKeyboardButton("🗂 Parollarni boshqarish", callback_data="admin_tp_list")
+        )
+        m.add(InlineKeyboardButton("📄 Test yuklash (PDF/TXT)", callback_data="admin_test_upload"))
+        m.add(InlineKeyboardButton("🔙 Orqaga", callback_data="admin"))
+        bot.edit_message_text("👨‍🏫 O'qituvchi bo'limi", call.message.chat.id, call.message.message_id, reply_markup=m)
+
+    elif call.data.startswith("qa_apply_subject:"):
+        key = call.data.split(":", 1)[1]
+        user_id = call.from_user.id
+        lang = get_user_lang(user_id)
+        user_form_state[user_id] = {"type": "kurs", "subject": key, "strict_phone": True}
+        msg = bot.send_message(call.message.chat.id, "👤 Ismingizni yozing:")
+        bot.register_next_step_handler(msg, course_name)
+
+    elif call.data == "admin_test_upload":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        kbd = InlineKeyboardMarkup(row_width=1)
+        for k, v in subjects.items():
+            kbd.add(InlineKeyboardButton(v, callback_data=f"admin_test_subject:{k}"))
+        kbd.add(InlineKeyboardButton("🔙 Orqaga", callback_data="admin_teachers_section"))
+        bot.edit_message_text("Fanni tanlang:", call.message.chat.id, call.message.message_id, reply_markup=kbd)
+
+    elif call.data.startswith("admin_test_subject:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        subj = call.data.split(":",1)[1]
+        admin_test_state[call.from_user.id] = {"subject": subj}
+        msg = bot.send_message(
+            call.message.chat.id,
+            "PDF yoki TXT faylini yuboring (savollar: bir bo‘limda savol, keyin 1) 2) ..., va Correct: n).",
+            reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Orqaga", callback_data="admin_teachers_section"))
+        )
+        bot.register_next_step_handler(msg, admin_test_receive_file)
+
+    elif call.data == "admin_tp_setpwd":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        kbd = InlineKeyboardMarkup(row_width=1)
+        for k, t in teachers.items():
+            nm = format_full_name(apply_teacher_override(k, t))
+            kbd.add(InlineKeyboardButton(nm, callback_data=f"admin_tp_setpwd_base:{k}"))
+        for t in get_custom_teachers():
+            kbd.add(InlineKeyboardButton(t.get("name",""), callback_data=f"admin_tp_setpwd_custom:{t.get('id')}"))
+        kbd.add(InlineKeyboardButton("🔙 Orqaga", callback_data="admin_teachers_section"))
+        bot.edit_message_text("Parol o'rnatish — o'qituvchi tanlang:", call.message.chat.id, call.message.message_id, reply_markup=kbd)
+
+    elif call.data.startswith("admin_tp_setpwd_base:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        key = call.data.split(":",1)[1]
+        admin_edit_state[call.from_user.id] = {"tp_ref": f"base:{key}"}
+        msg = bot.send_message(call.message.chat.id, "Yangi parolni yozing:")
+        bot.register_next_step_handler(msg, admin_tp_setpwd_input_step)
+
+    elif call.data.startswith("admin_tp_setpwd_custom:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        tid = call.data.split(":",1)[1]
+        admin_edit_state[call.from_user.id] = {"tp_ref": f"custom:{tid}"}
+        msg = bot.send_message(call.message.chat.id, "Yangi parolni yozing:")
+        bot.register_next_step_handler(msg, admin_tp_setpwd_input_step)
+
+    elif call.data == "admin_tp_list":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        tps = get_teacher_passwords()
+        if not tps:
+            bot.edit_message_text("Parollar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        kbd = InlineKeyboardMarkup(row_width=1)
+        for ref in tps.keys():
+            kbd.add(InlineKeyboardButton(f"O'chirish: {teacher_ref_to_name(ref)}", callback_data=f"admin_tp_delpwd:{ref}"))
+        kbd.add(InlineKeyboardButton("🔙 Orqaga", callback_data="admin_teachers_section"))
+        bot.edit_message_text("Parollar ro'yxati (parol ko'rsatilmaydi):", call.message.chat.id, call.message.message_id, reply_markup=kbd)
+
+    elif call.data.startswith("admin_tp_delpwd:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        ref = call.data.split(":",1)[1]
+        admin_edit_state[call.from_user.id] = {"tp_del_ref": ref}
+        mk = InlineKeyboardMarkup()
+        mk.add(
+            InlineKeyboardButton("✅ Ha", callback_data=f"admin_tp_delpwd_yes:{ref}"),
+            InlineKeyboardButton("❌ Yo'q", callback_data="admin_teachers_section")
+        )
+        bot.edit_message_text(f"{teacher_ref_to_name(ref)} paroli o'chirilsinmi?", call.message.chat.id, call.message.message_id, reply_markup=mk)
+
+    elif call.data.startswith("admin_tp_delpwd_yes:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        ref = call.data.split(":",1)[1]
+        delete_teacher_password_for_ref(ref)
+        bot.edit_message_text("✅ Parol o'chirildi.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "qa_apply_no":
+        bot.answer_callback_query(call.id, "Yaxshi, menyudan davom eting.")
+        try:
+            bot.edit_message_text("Bekor qilindi.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+        except:
+            pass
+    elif call.data == "admin_remove_admin":
+        if not is_primary_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Faqat asosiy admin o'chira oladi!")
+            return
+        msg = bot.send_message(call.message.chat.id, "🆔 O'chiriladigan admin ID ni yozing:")
+        bot.register_next_step_handler(msg, admin_remove_admin_step)
+
+    elif call.data == "admin_teacher_edit":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        kbd = InlineKeyboardMarkup(row_width=1)
+        count = 0
+        for k, t in teachers.items():
+            cur = apply_teacher_override(k, t)
+            nm = format_full_name(cur)
+            price = cur.get("price")
+            label = f"{nm} — {price}" if price else nm
+            kbd.add(InlineKeyboardButton(label, callback_data=f"edit_base_teacher:{k}"))
+            count += 1
+        dbt = get_custom_teachers()
+        for t in dbt:
+            nm = t.get("name","")
+            price = t.get("price")
+            label = f"{nm} — {price}" if price else nm
+            kbd.add(InlineKeyboardButton(label, callback_data=f"edit_custom_teacher:{t.get('id')}"))
+            count += 1
+        if count == 0:
+            bot.edit_message_text("❌ O'qituvchilar ro'yxati bo'sh.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+        else:
+            bot.edit_message_text("O'qituvchini tanlang:", call.message.chat.id, call.message.message_id, reply_markup=kbd)
+
+    elif call.data.startswith("edit_base_teacher:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        key = call.data.split(":",1)[1]
+        user_id = call.from_user.id
+        base = teachers.get(key, {})
+        cur = apply_teacher_override(key, base)
+        nm = format_full_name(cur)
+        info_text = (
+            f"Hozirgi ma'lumotlar:\n"
+            f"Ism/Familiya: {nm}\n"
+            f"Fan: {cur.get('subject','')}\n"
+            f"Ma'lumot:\n{cur.get('info','')}\n\n"
+            f"Qaysi maydonni tahrirlaysiz? (Ism/Familiya/Fan/Ma'lumot)"
+        )
+        admin_edit_state[user_id] = {"key": key}
+        msg = bot.send_message(call.message.chat.id, info_text)
+        bot.register_next_step_handler(msg, teacher_edit_base_field_step)
+
+    elif call.data.startswith("edit_custom_teacher:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        try:
+            tid = int(call.data.split(":",1)[1])
+        except:
+            bot.answer_callback_query(call.id, "ID xato")
+            return
+        db = load_db()
+        lst = db.get("teachers_custom", [])
+        cur = None
+        for t in lst:
+            if t.get("id") == tid:
+                cur = t
+                break
+        if not cur:
+            bot.answer_callback_query(call.id, "Topilmadi")
+            return
+        info_text = (
+            f"Hozirgi ma'lumotlar:\n"
+            f"Ism: {cur.get('name','')}\n"
+            f"Fan: {cur.get('subject','')}\n"
+            f"Ma'lumot:\n{cur.get('info','')}\n\n"
+            f"Qaysi maydonni tahrirlaysiz? (Ism/Fan/Ma'lumot)"
+        )
+        msg = bot.send_message(call.message.chat.id, info_text)
+        bot.register_next_step_handler(msg, lambda m: teacher_edit_field_step(m, {"id": tid}))
+
+    elif call.data == "admin_teacher_delete":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        dbt = get_custom_teachers()
+        if not dbt:
+            bot.edit_message_text("❌ Hozircha custom o'qituvchilar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([f"{t['id']}: {t['name']} ({t.get('subject','')})" for t in dbt])
+        msg = bot.send_message(call.message.chat.id, "O'chirish uchun ID ni yozing:\n" + listing)
+        bot.register_next_step_handler(msg, teacher_delete_step)
+    
+    elif call.data.startswith("confirm_delete_teacher:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        try:
+            tid = int(call.data.split(":",1)[1])
+        except:
+            bot.answer_callback_query(call.id, "ID xato")
+            return
+        db = load_db()
+        lst = db.get("teachers_custom", [])
+        new_lst = [t for t in lst if t.get("id") != tid]
+        if len(new_lst) == len(lst):
+            bot.answer_callback_query(call.id, "Topilmadi")
+            return
+        db["teachers_custom"] = new_lst
+        save_db(db)
+        bot.edit_message_text("✅ O'qituvchi o'chirildi.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+    
+    elif call.data == "cancel_delete_teacher":
+        bot.edit_message_text("Bekor qilindi.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "admin_ariza_edit":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        arizalar = db.get("arizalar", [])
+        if not arizalar:
+            bot.edit_message_text("❌ Arizalar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([f"{i+1}: {a.get('name')} ({a.get('subject')})" for i, a in enumerate(arizalar[:15])])
+        msg = bot.send_message(call.message.chat.id, "Tahrirlash uchun indeksni yozing (1..N):\n" + listing)
+        bot.register_next_step_handler(msg, ariza_edit_index_step)
+
+    elif call.data == "admin_ariza_delete":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        arizalar = db.get("arizalar", [])
+        if not arizalar:
+            bot.edit_message_text("❌ Arizalar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([f"{i+1}: {a.get('name')} ({a.get('subject')})" for i, a in enumerate(arizalar[:15])])
+        msg = bot.send_message(call.message.chat.id, "O'chirish uchun indeksni yozing (1..N):\n" + listing)
+        bot.register_next_step_handler(msg, ariza_delete_index_step)
+
+    elif call.data == "admin_ariza_notify":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        arizalar = db.get("arizalar", [])
+        if not arizalar:
+            bot.edit_message_text("❌ Arizalar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([f"{i+1}: {a.get('name','')} — {a.get('subject','')}" for i, a in enumerate(arizalar[:20])])
+        admin_notify_state[call.from_user.id] = {}
+        msg = bot.send_message(call.message.chat.id, "Xabar yuborish uchun indeksni yozing (1..N):\n" + listing)
+        bot.register_next_step_handler(msg, admin_ariza_notify_index_step)
+
+    elif call.data == "admin_ariza_notify_subject":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        kbd = InlineKeyboardMarkup(row_width=1)
+        for k, v in subjects.items():
+            kbd.add(InlineKeyboardButton(v, callback_data=f"admin_ariza_notify_subject_select:{k}"))
+        bot.edit_message_text("Fan tanlang:", call.message.chat.id, call.message.message_id, reply_markup=kbd)
+
+    elif call.data.startswith("admin_ariza_notify_subject_select:"):
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        subject_key = call.data.split(":",1)[1]
+        admin_notify_state[call.from_user.id] = {"subject": subject_key}
+        subject_name = subjects.get(subject_key, subject_key)
+        msg = bot.send_message(call.message.chat.id, f"{subject_name}\nXabar matnini yozing (bo'sh — standart):")
+        bot.register_next_step_handler(msg, admin_ariza_notify_subject_message_step)
+    elif call.data == "admin_check_edit":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        checks = db.get("checks", [])
+        if not checks:
+            bot.edit_message_text("❌ Cheklar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([f"{c.get('id')}: {c.get('name')} - {c.get('amount')}" for c in checks[:15]])
+        msg = bot.send_message(call.message.chat.id, "Tahrirlash uchun chek ID ni yozing:\n" + listing)
+        bot.register_next_step_handler(msg, check_edit_id_step)
+
+    elif call.data == "admin_check_delete":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        checks = db.get("checks", [])
+        if not checks:
+            bot.edit_message_text("❌ Cheklar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([f"{c.get('id')}: {c.get('name')} - {c.get('amount')}" for c in checks[:15]])
+        msg = bot.send_message(call.message.chat.id, "O'chirish uchun chek ID ni yozing:\n" + listing)
+        bot.register_next_step_handler(msg, check_delete_id_step)
+
+    elif call.data == "admin_subscriber_delete":
+        if not is_admin(call.from_user.id):
+            bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
+            return
+        subs = db.get("subscribers", [])
+        if not subs:
+            bot.edit_message_text("❌ Obunachilar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([str(s) for s in subs[:20]])
+        msg = bot.send_message(call.message.chat.id, "O'chirish uchun obunachi ID ni yozing:\n" + listing)
+        bot.register_next_step_handler(msg, subscriber_delete_id_step)
+
     # Kursga yozilish arizasi
     elif call.data == "ariza_course":
         lang = get_user_lang(call.from_user.id)
@@ -1732,6 +2401,10 @@ def callback(call):
         markup = InlineKeyboardMarkup(row_width=1)
         for k in quiz_data.keys():
             markup.add(InlineKeyboardButton(quiz_data[k]["name"], callback_data=f"quiz:{k}"))
+        uploads = get_quiz_uploads()
+        for subj, qobj in uploads.items():
+            name = qobj.get("name") or f"{subjects.get(subj, subj)} Test"
+            markup.add(InlineKeyboardButton(name, callback_data=f"quiz:db:{subj}"))
         markup.add(InlineKeyboardButton("🔙 Orqaga", callback_data="back"))
         lang = get_user_lang(call.from_user.id)
         bot.edit_message_text(
@@ -1745,7 +2418,11 @@ def callback(call):
     elif call.data.startswith("quiz:"):
         key = call.data.split(":", 1)[1]
         lang = get_user_lang(call.from_user.id)
-        msg_text = localized_texts["quiz_started"].get(lang, localized_texts["quiz_started"]["O'zbek"]).format(name=quiz_data[key]["name"])
+        qobj = get_quiz(key)
+        if not qobj:
+            bot.answer_callback_query(call.id, "❌ Test topilmadi")
+            return
+        msg_text = localized_texts["quiz_started"].get(lang, localized_texts["quiz_started"]["O'zbek"]).format(name=qobj.get("name","Test"))
         bot.send_message(call.message.chat.id, msg_text)
         show_quiz_question(call.message.chat.id, key, 0, 0)
     
@@ -1773,6 +2450,169 @@ def callback(call):
         except:
             pass
     
+    elif call.data == "teacher_panel":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            msg = bot.send_message(call.message.chat.id, "Parolni kiriting:")
+            bot.register_next_step_handler(msg, teacher_login_step)
+            return
+        show_teacher_panel(call.message.chat.id, user_id)
+
+    elif call.data.startswith("teacher_bind_base:"):
+        user_id = call.from_user.id
+        key = call.data.split(":",1)[1]
+        set_teacher_link(user_id, {"type": "base", "key": key, "subject": key})
+        bot.edit_message_text("✅ Bog‘landi. Endi o‘qituvchi panelidan foydalanishingiz mumkin.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data.startswith("teacher_bind_custom:"):
+        user_id = call.from_user.id
+        try:
+            tid = int(call.data.split(":",1)[1])
+        except:
+            bot.answer_callback_query(call.id, "ID xato")
+            return
+        dbt = get_custom_teachers()
+        cur = None
+        for t in dbt:
+            if t.get("id") == tid:
+                cur = t
+                break
+        if not cur:
+            bot.answer_callback_query(call.id, "Topilmadi")
+            return
+        set_teacher_link(user_id, {"type": "custom", "id": tid, "subject": cur.get("subject")})
+        bot.edit_message_text("✅ Bog‘landi. Endi o‘qituvchi panelidan foydalanishingiz mumkin.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "teacher_profile":
+        user_id = call.from_user.id
+        l = get_teacher_links().get(str(user_id))
+        if not l:
+            bot.answer_callback_query(call.id, "Bog‘lanmagan")
+            return
+        if l.get("type") == "base":
+            key = l.get("key")
+            cur = apply_teacher_override(key, teachers.get(key, {}))
+            nm = format_full_name(cur)
+            txt = f"👤 {nm}\n📂 {cur.get('subject','')}\n💰 {cur.get('price','')}\n\n{cur.get('info','')}"
+        else:
+            dbt = get_custom_teachers()
+            cur = None
+            for t in dbt:
+                if t.get("id") == l.get("id"):
+                    cur = t
+                    break
+            nm = cur.get("name","") if cur else ""
+            txt = f"👤 {nm}\n📂 {cur.get('subject','') if cur else ''}\n💰 {cur.get('price','') if cur else ''}\n\n{cur.get('info','') if cur else ''}"
+        bot.edit_message_text(txt, call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "teacher_self_edit":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Bog‘lanmagan")
+            return
+        msg = bot.send_message(call.message.chat.id, "Qaysi maydonni tahrirlaysiz? (Ism/Familiya/Fan/Ma'lumot/To'lov)")
+        bot.register_next_step_handler(msg, teacher_self_edit_field_step)
+
+    elif call.data == "teacher_self_test":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Bog‘lanmagan")
+            return
+        subj = get_teacher_subject_for_user(user_id)
+        if not subj:
+            kbd = InlineKeyboardMarkup(row_width=1)
+            for k, v in subjects.items():
+                kbd.add(InlineKeyboardButton(v, callback_data=f"tp_set_subject:{k}"))
+            bot.edit_message_text("Fan tanlang:", call.message.chat.id, call.message.message_id, reply_markup=kbd)
+            return
+        admin_test_state[user_id] = {"subject": subj}
+        msg = bot.send_message(call.message.chat.id, "PDF yoki TXT faylini yuboring (savollar: bir bo‘limda savol, keyin 1) 2) ..., va Correct: n).")
+        bot.register_next_step_handler(msg, admin_test_receive_file)
+
+    elif call.data.startswith("tp_set_subject:"):
+        user_id = call.from_user.id
+        subj = call.data.split(":",1)[1]
+        set_teacher_link(user_id, {"type": "manual", "subject": subj})
+        bot.edit_message_text("✅ Fan saqlandi.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "tp_students":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Ruxsat yo'q")
+            return
+        subj = get_teacher_subject_for_user(user_id)
+        db = load_db()
+        lst = db.get("arizalar", [])
+        studs = [a for a in lst if a.get("subject") == subj and a.get("user_id")]
+        count = len(studs)
+        preview = "\n".join([f"{a.get('name','?')} — {a.get('phone','?')}" for a in studs[:15]]) or "Yo'q"
+        bot.edit_message_text(f"👨‍🎓 Talabalar: {count}\n\n{preview}", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "tp_stats":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Ruxsat yo'q")
+            return
+        subj = get_teacher_subject_for_user(user_id)
+        db = load_db()
+        studs = [a for a in db.get("arizalar", []) if a.get("subject") == subj and a.get("user_id")]
+        results = [r for r in db.get("quiz_results", []) if r.get("subject") == subj]
+        avg = 0
+        if results:
+            avg = sum(r.get("score",0)/max(1,r.get("total",1)) for r in results)/len(results)*100
+        msg = f"📊 Statistika\nFan: {subj}\nTalabalar: {len(studs)}\nTestlar: {len(results)}\nO'rtacha ball: {avg:.1f}%"
+        bot.edit_message_text(msg, call.message.chat.id, call.message.message_id, reply_markup=back_button())
+
+    elif call.data == "tp_homework":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Ruxsat yo'q")
+            return
+        msg = bot.send_message(call.message.chat.id, "Uy vazifani yozing yoki fayl yuboring:")
+        bot.register_next_step_handler(msg, teacher_homework_receive)
+
+    elif call.data == "tp_announce":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Ruxsat yo'q")
+            return
+        msg = bot.send_message(call.message.chat.id, "E'lon matnini yozing:")
+        bot.register_next_step_handler(msg, teacher_announce_step)
+
+    elif call.data == "tp_materials":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Ruxsat yo'q")
+            return
+        m = InlineKeyboardMarkup(row_width=2)
+        m.add(
+            InlineKeyboardButton("➕ Qo'shish", callback_data="tp_material_add"),
+            InlineKeyboardButton("🗂 Ro'yxat/O'chirish", callback_data="tp_material_list")
+        )
+        bot.edit_message_text("Materiallar", call.message.chat.id, call.message.message_id, reply_markup=m)
+
+    elif call.data == "tp_material_add":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Ruxsat yo'q")
+            return
+        msg = bot.send_message(call.message.chat.id, "Matn, link yoki fayl yuboring:")
+        bot.register_next_step_handler(msg, teacher_material_add_step)
+
+    elif call.data == "tp_material_list":
+        user_id = call.from_user.id
+        if user_id not in teacher_sessions:
+            bot.answer_callback_query(call.id, "Ruxsat yo'q")
+            return
+        db = load_db()
+        mats = db.get("teacher_materials", {}).get(str(user_id), [])
+        if not mats:
+            bot.edit_message_text("Materiallar yo'q.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
+            return
+        listing = "\n".join([f"{i+1}: {m.get('title','Material')}" for i, m in enumerate(mats[:20])])
+        msg = bot.send_message(call.message.chat.id, "O'chirish uchun indeksni yozing:\n" + listing)
+        bot.register_next_step_handler(msg, teacher_material_delete_index_step)
+
     # TEACHER SEARCH
     elif call.data == "search_teacher":
         msg = bot.send_message(
@@ -1862,7 +2702,8 @@ def callback(call):
                 "phone": form.get("phone"),
                 "subject": form.get("subject"),
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "status": "yangi"
+            "status": "yangi",
+            "user_id": int(user_id)
             }
             db["arizalar"].append(ariza)
             save_db(db)
@@ -1871,7 +2712,7 @@ def callback(call):
             
             subject_name = subjects.get(form.get("subject"), form.get("subject"))
             admin_text = f"📩 Yangi ariza:\n👤 {form.get('name')}\n📞 {form.get('phone')}\n📚 {subject_name}\n🕒 {ariza['time']}"
-            for admin in ADMINS:
+            for admin in all_admins():
                 try:
                     bot.send_message(admin, admin_text)
                 except:
@@ -1888,16 +2729,26 @@ def callback(call):
 
 # --- QUIZ HANDLERS ---
 def show_quiz_question(chat_id, quiz_key, question_idx, score):
-    if quiz_key not in quiz_data:
+    qobj = get_quiz(quiz_key)
+    if not qobj:
         return
-    
-    questions = quiz_data[quiz_key]["questions"]
+    questions = qobj.get("questions", [])
     if question_idx >= len(questions):
-        # Quiz tugadi
-        bot.send_message(
-            chat_id,
-            f"🎉 Quiz tugadi!\n\nSizning ballangiz: {score}/{len(questions)}\n\n{(score/len(questions))*100:.0f}%"
-        )
+        db = load_db()
+        res = db.get("quiz_results", [])
+        total = len(questions)
+        subj = quiz_key.split(":",1)[1] if quiz_key.startswith("db:") else quiz_key
+        res.append({
+            "user_id": int(chat_id),
+            "quiz_key": quiz_key,
+            "subject": subj,
+            "score": int(score),
+            "total": int(total),
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+        db["quiz_results"] = res
+        save_db(db)
+        bot.send_message(chat_id, f"🎉 Quiz tugadi!\n\nSizning ballangiz: {score}/{total}\n\n{(score/total)*100:.0f}%")
         return
     
     q = questions[question_idx]
@@ -1921,7 +2772,8 @@ def handle_quiz_answer(call):
     selected = int(parts[3])
     score = int(parts[4])
     
-    if quiz_key not in quiz_data:
+    qobj = get_quiz(quiz_key)
+    if not qobj:
         return
     
     # Vaqt chegarasi tekshirish
@@ -1934,12 +2786,18 @@ def handle_quiz_answer(call):
     
     if time_elapsed > QUIZ_TIME_LIMIT:
         # Vaqt tugadi
-        q = quiz_data[quiz_key]["questions"][question_idx]
+        questions = qobj.get("questions", [])
+        if question_idx < len(questions):
+            q = questions[question_idx]
+            bot.send_message(call.message.chat.id, f"⏱️ Vaqt tugadi! To'g'ri javob: {q['options'][q['correct']]}")
         bot.send_message(call.message.chat.id, f"⏱️ Vaqt tugadi! To'g'ri javob: {q['options'][q['correct']]}")
         show_quiz_question(call.message.chat.id, quiz_key, question_idx + 1, score)
         return
     
-    q = quiz_data[quiz_key]["questions"][question_idx]
+    questions = qobj.get("questions", [])
+    if question_idx >= len(questions):
+        return
+    q = questions[question_idx]
     is_correct = selected == q["correct"]
     
     if is_correct:
@@ -1949,6 +2807,62 @@ def handle_quiz_answer(call):
         bot.send_message(call.message.chat.id, f"❌ Noto'g'ri. To'g'ri javob: {q['options'][q['correct']]}")
     
     show_quiz_question(call.message.chat.id, quiz_key, question_idx + 1, score)
+
+def admin_test_receive_file(message):
+    user_id = message.from_user.id
+    if not is_admin(user_id):
+        bot.send_message(message.chat.id, "❌ Sizga ruxsat yo'q!", reply_markup=back_button())
+        return
+    st = admin_test_state.get(user_id, {})
+    subj = st.get("subject")
+    if not subj:
+        bot.send_message(message.chat.id, "❌ Fan tanlanmagan.", reply_markup=back_button())
+        return
+    if not getattr(message, "document", None):
+        msg = bot.send_message(message.chat.id, "❌ Iltimos, PDF yoki TXT faylini yuboring:")
+        bot.register_next_step_handler(msg, admin_test_receive_file)
+        return
+    file_name = message.document.file_name or ""
+    file_id = message.document.file_id
+    ext = file_name.lower().split(".")[-1] if "." in file_name else ""
+    try:
+        data = download_telegram_file(file_id)
+    except Exception:
+        bot.send_message(message.chat.id, "❌ Faylni yuklab bo'lmadi.", reply_markup=back_button())
+        return
+    text = None
+    if ext == "txt":
+        try:
+            text = data.decode("utf-8", errors="ignore")
+        except Exception:
+            text = data.decode("latin-1", errors="ignore")
+    elif ext == "pdf":
+        try:
+            import PyPDF2  # type: ignore
+            from io import BytesIO
+            reader = PyPDF2.PdfReader(BytesIO(data))
+            pages = []
+            for p in reader.pages:
+                try:
+                    pages.append(p.extract_text() or "")
+                except:
+                    pages.append("")
+            text = "\n".join(pages)
+        except Exception:
+            bot.send_message(message.chat.id, "❌ PDF o‘qish uchun kutubxona topilmadi yoki xato yuz berdi. Iltimos TXT yuboring.", reply_markup=back_button())
+            return
+    else:
+        msg = bot.send_message(message.chat.id, "❌ Faqat PDF yoki TXT qabul qilinadi. Qayta yuboring:")
+        bot.register_next_step_handler(msg, admin_test_receive_file)
+        return
+    questions = parse_test_text(text or "")
+    if not questions:
+        bot.send_message(message.chat.id, "❌ Savollar topilmadi. Formatni tekshiring.", reply_markup=back_button())
+        return
+    name = f"{subjects.get(subj, subj)} Test"
+    set_quiz_upload(subj, {"name": name, "questions": questions})
+    kbd = InlineKeyboardMarkup().add(InlineKeyboardButton("📝 Testni boshlash", callback_data=f"quiz:db:{subj}"))
+    bot.send_message(message.chat.id, f"✅ {len(questions)} ta savol yuklandi.", reply_markup=kbd)
 
 # --- LANGUAGE SELECTION HANDLER ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith("lang:"))
@@ -2032,6 +2946,11 @@ def course_phone(message, name):
     # Store phone in form state
     if user_id in user_form_state:
         user_form_state[user_id]["phone"] = phone
+        if user_form_state[user_id].get("strict_phone"):
+            if phone != "907877157":
+                msg = bot.send_message(message.chat.id, "❌ Telefon raqam noto'g'ri. Iltimos 907877157 ni kiriting:")
+                bot.register_next_step_handler(msg, lambda m: course_phone(m, name))
+                return
     
     # Ask for confirmation
     confirm_markup = InlineKeyboardMarkup()
@@ -2070,21 +2989,705 @@ def handle_teacher_search(message):
     # Teachers'ni izlash
     found_teachers = []
     for key, teacher in teachers.items():
-        if search_name in teacher["name"].lower():
-            found_teachers.append((key, teacher))
+        t = apply_teacher_override(key, teacher)
+        name_surname = (t.get("name","") + (" " + t.get("surname","") if t.get("surname") else "")).strip()
+        subj = t.get("subject","")
+        info = t.get("bio","") or t.get("info","")
+        if search_name in name_surname.lower() or search_name in subj.lower() or (info and search_name in info.lower()):
+            found_teachers.append((key, t))
+    for t in get_custom_teachers():
+        if search_name in t["name"].lower():
+            found_teachers.append((f"custom_{t.get('id','0')}", t))
     
     if found_teachers:
         response = "🎓 Topilgan o'qituvchilar:\n\n"
         for key, teacher in found_teachers:
-            response += teacher["info"] + "\n" + "=" * 40 + "\n"
+            nm = (teacher.get("name","") + (" " + teacher.get("surname","") if teacher.get("surname") else "")).strip()
+            info = teacher.get("info") or f"👤 {nm}\n📂 {teacher.get('subject','')}"
+            response += info + "\n" + "=" * 40 + "\n"
         bot.send_message(message.chat.id, response, reply_markup=back_button())
     else:
         bot.send_message(
             message.chat.id,
             f"❌ '{search_name}' nomli o'qituvchi topilmadi.\n\nBiz quyidagi o'qituvchilarni taklif qilamiz:\n" + 
-            "\n".join([f"👤 {t['name']}" for k, t in teachers.items()]),
+            "\n".join([f"👤 {(apply_teacher_override(k, t).get('name','') + (' ' + apply_teacher_override(k, t).get('surname','') if apply_teacher_override(k, t).get('surname') else '')).strip()}" for k, t in teachers.items()] + [f"👤 {t['name']}" for t in get_custom_teachers()]),
             reply_markup=back_button()
         )
+
+def get_custom_teachers():
+    db = load_db()
+    return db.get("teachers_custom", [])
+
+def get_teacher_overrides():
+    db = load_db()
+    return db.get("teachers_overrides", {})
+
+def apply_teacher_override(key, base):
+    ov = get_teacher_overrides()
+    o = ov.get(key, {})
+    m = dict(base)
+    for k in ["name", "surname", "subject", "info", "price"]:
+        if k in o:
+            m[k] = o[k]
+    return m
+
+def set_teacher_override_field(key, field, value):
+    db = load_db()
+    ov = db.get("teachers_overrides", {})
+    cur = ov.get(key, {})
+    cur[field] = value
+    ov[key] = cur
+    db["teachers_overrides"] = ov
+    save_db(db)
+
+def format_full_name(t):
+    nm = (t.get("name","") + (" " + t.get("surname","") if t.get("surname") else "")).strip()
+    return nm
+
+def teacher_add_name_step(message):
+    name = (message.text or "").strip()
+    if not name:
+        msg = bot.send_message(message.chat.id, "Ism yozing:")
+        bot.register_next_step_handler(msg, teacher_add_name_step)
+        return
+    s = {"name": name}
+    msg = bot.send_message(message.chat.id, "Fan nomini yozing:")
+    bot.register_next_step_handler(msg, lambda m: teacher_add_subject_step(m, s))
+
+def teacher_add_subject_step(message, state):
+    subject = (message.text or "").strip()
+    if not subject:
+        msg = bot.send_message(message.chat.id, "Fan nomini yozing:")
+        bot.register_next_step_handler(msg, lambda m: teacher_add_subject_step(m, state))
+        return
+    state["subject"] = subject
+    msg = bot.send_message(message.chat.id, "O'qituvchi haqida qisqacha ma'lumot yozing:")
+    bot.register_next_step_handler(msg, lambda m: teacher_add_info_step(m, state))
+
+def teacher_add_info_step(message, state):
+    info = (message.text or "").strip()
+    db = load_db()
+    lst = db.get("teachers_custom", [])
+    tid = (lst[-1]["id"] + 1) if lst else 1
+    entry = {"id": tid, "name": state.get("name"), "subject": state.get("subject"), "info": info}
+    lst.append(entry)
+    db["teachers_custom"] = lst
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ O'qituvchi qo'shildi.", reply_markup=back_button())
+
+def admin_add_admin_step(message):
+    text = (message.text or "").strip()
+    user_id = message.from_user.id
+    if not is_admin(user_id):
+        bot.send_message(message.chat.id, "❌ Sizga ruxsat yo'q!", reply_markup=back_button())
+        return
+    try:
+        new_admin_id = int(text)
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ ID noto'g'ri. Iltimos raqam kiriting:")
+        bot.register_next_step_handler(msg, admin_add_admin_step)
+        return
+    add_admin(new_admin_id)
+    bot.send_message(message.chat.id, f"✅ Admin qo'shildi: {new_admin_id}", reply_markup=back_button())
+    for a in all_admins():
+        if a != user_id:
+            try:
+                bot.send_message(a, f"🆕 Yangi admin qo'shildi: {new_admin_id}")
+            except:
+                pass
+
+def admin_broadcast_step(message):
+    user_id = message.from_user.id
+    if not is_admin(user_id):
+        bot.send_message(message.chat.id, "❌ Sizga ruxsat yo'q!", reply_markup=back_button())
+        return
+    text = (message.text or "").strip()
+    if not text:
+        msg = bot.send_message(message.chat.id, "❌ Matn bo'sh. Qayta yozing:")
+        bot.register_next_step_handler(msg, admin_broadcast_step)
+        return
+    db = load_db()
+    subs = db.get("subscribers", [])
+    sent = 0
+    for sid in subs:
+        try:
+            bot.send_message(int(sid), text)
+            sent += 1
+        except:
+            pass
+    bot.send_message(message.chat.id, f"📢 E'lon {sent} obunachiga yuborildi.", reply_markup=back_button())
+
+def admin_remove_admin_step(message):
+    user_id = message.from_user.id
+    if not is_primary_admin(user_id):
+        bot.send_message(message.chat.id, "❌ Faqat asosiy admin o'chira oladi.", reply_markup=back_button())
+        return
+    text = (message.text or "").strip()
+    try:
+        rm_id = int(text)
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ ID noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, admin_remove_admin_step)
+        return
+    if rm_id in set(ADMINS):
+        bot.send_message(message.chat.id, "❌ Asosiy adminni o'chirib bo'lmaydi.", reply_markup=back_button())
+        return
+    db = load_db()
+    admins = set(db.get("admins", []))
+    if rm_id not in admins:
+        bot.send_message(message.chat.id, "❌ Bu ID bazadagi adminlar orasida yo'q.", reply_markup=back_button())
+        return
+    admins.discard(rm_id)
+    db["admins"] = list(admins)
+    save_db(db)
+    bot.send_message(message.chat.id, f"✅ Admin o'chirildi: {rm_id}", reply_markup=back_button())
+
+def admin_ariza_notify_index_step(message):
+    user_id = message.from_user.id
+    text = (message.text or "").strip()
+    try:
+        idx = int(text) - 1
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ Indeks noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, admin_ariza_notify_index_step)
+        return
+    db = load_db()
+    lst = db.get("arizalar", [])
+    if idx < 0 or idx >= len(lst):
+        msg = bot.send_message(message.chat.id, "❌ Indeks chegaradan tashqarida. Qayta kiriting:")
+        bot.register_next_step_handler(msg, admin_ariza_notify_index_step)
+        return
+    ariza = lst[idx]
+    admin_notify_state[user_id] = {"idx": idx}
+    subject_name = subjects.get(ariza.get("subject"), ariza.get("subject",""))
+    default_msg = f"Sizning {subject_name} kursingiz ochildi. Aloqa uchun ushbu xabarni javob bering."
+    msg = bot.send_message(message.chat.id, "Xabar matnini yozing (yoki bo'sh qoldiring — standart xabar yuboriladi):")
+    bot.register_next_step_handler(msg, admin_ariza_notify_message_step)
+
+def admin_ariza_notify_message_step(message):
+    admin_id = message.from_user.id
+    st = admin_notify_state.get(admin_id, {})
+    db = load_db()
+    lst = db.get("arizalar", [])
+    idx = st.get("idx")
+    if idx is None or idx < 0 or idx >= len(lst):
+        bot.send_message(message.chat.id, "❌ Xato. Qayta urinib ko'ring.", reply_markup=back_button())
+        return
+    ariza = lst[idx]
+    subject_name = subjects.get(ariza.get("subject"), ariza.get("subject",""))
+    text_in = (message.text or "").strip()
+    notify_text = text_in or f"Sizning {subject_name} kursingiz ochildi. Aloqa uchun ushbu xabarni javob bering."
+    uid = ariza.get("user_id")
+    if not uid:
+        bot.send_message(message.chat.id, "❌ Bu arizada user_id saqlanmagan, xabar yuborib bo'lmaydi.", reply_markup=back_button())
+        return
+    try:
+        bot.send_message(int(uid), notify_text)
+        bot.send_message(message.chat.id, "✅ Xabar yuborildi.", reply_markup=back_button())
+    except Exception:
+        bot.send_message(message.chat.id, "❌ Xabar yuborishda xato.", reply_markup=back_button())
+
+def admin_ariza_notify_subject_message_step(message):
+    admin_id = message.from_user.id
+    st = admin_notify_state.get(admin_id, {})
+    subject_key = st.get("subject")
+    if not subject_key:
+        bot.send_message(message.chat.id, "❌ Xato. Qayta urinib ko'ring.", reply_markup=back_button())
+        return
+    db = load_db()
+    lst = db.get("arizalar", [])
+    subject_name = subjects.get(subject_key, subject_key)
+    text_in = (message.text or "").strip()
+    notify_text = text_in or f"Sizning {subject_name} kursingiz ochildi. Aloqa uchun ushbu xabarni javob bering."
+    sent = 0
+    for a in lst:
+        if a.get("subject") == subject_key and a.get("user_id"):
+            try:
+                bot.send_message(int(a["user_id"]), notify_text)
+                sent += 1
+            except Exception:
+                pass
+    bot.send_message(message.chat.id, f"✅ Xabar {sent} arizachiga yuborildi.", reply_markup=back_button())
+
+def teacher_homework_receive(message):
+    user_id = message.from_user.id
+    if user_id not in teacher_sessions:
+        bot.send_message(message.chat.id, "Ruxsat yo'q.", reply_markup=back_button())
+        return
+    db = load_db()
+    hw = db.get("teacher_homeworks", {})
+    arr = hw.get(str(user_id), [])
+    if getattr(message, "document", None):
+        arr.append({"type": "file", "file_id": message.document.file_id, "file_name": message.document.file_name, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+    else:
+        text = (message.text or "").strip()
+        arr.append({"type": "text", "text": text, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+    hw[str(user_id)] = arr
+    db["teacher_homeworks"] = hw
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ Uy vazifa saqlandi.", reply_markup=back_button())
+
+def teacher_announce_step(message):
+    user_id = message.from_user.id
+    if user_id not in teacher_sessions:
+        bot.send_message(message.chat.id, "Ruxsat yo'q.", reply_markup=back_button())
+        return
+    text = (message.text or "").strip()
+    subj = get_teacher_subject_for_user(user_id)
+    db = load_db()
+    lst = db.get("arizalar", [])
+    sent = 0
+    for a in lst:
+        if a.get("subject") == subj and a.get("user_id"):
+            try:
+                bot.send_message(int(a["user_id"]), text)
+                sent += 1
+            except Exception:
+                pass
+    bot.send_message(message.chat.id, f"✅ E'lon {sent} talaba(ga) yuborildi.", reply_markup=back_button())
+
+def teacher_material_add_step(message):
+    user_id = message.from_user.id
+    if user_id not in teacher_sessions:
+        bot.send_message(message.chat.id, "Ruxsat yo'q.", reply_markup=back_button())
+        return
+    db = load_db()
+    mats = db.get("teacher_materials", {})
+    arr = mats.get(str(user_id), [])
+    if getattr(message, "document", None):
+        arr.append({"type": "file", "file_id": message.document.file_id, "file_name": message.document.file_name, "title": message.document.file_name, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+    else:
+        text = (message.text or "").strip()
+        title = text[:40] + ("..." if len(text) > 40 else "")
+        arr.append({"type": "text", "text": text, "title": title, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+    mats[str(user_id)] = arr
+    db["teacher_materials"] = mats
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ Material saqlandi.", reply_markup=back_button())
+
+def teacher_material_delete_index_step(message):
+    user_id = message.from_user.id
+    if user_id not in teacher_sessions:
+        bot.send_message(message.chat.id, "Ruxsat yo'q.", reply_markup=back_button())
+        return
+    text = (message.text or "").strip()
+    try:
+        idx = int(text) - 1
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ Indeks xato. Qayta kiriting:")
+        bot.register_next_step_handler(msg, teacher_material_delete_index_step)
+        return
+    db = load_db()
+    mats = db.get("teacher_materials", {})
+    arr = mats.get(str(user_id), [])
+    if idx < 0 or idx >= len(arr):
+        msg = bot.send_message(message.chat.id, "❌ Indeks chegaradan tashqarida. Qayta kiriting:")
+        bot.register_next_step_handler(msg, teacher_material_delete_index_step)
+        return
+    arr.pop(idx)
+    mats[str(user_id)] = arr
+    db["teacher_materials"] = mats
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ O'chirildi.", reply_markup=back_button())
+
+def teacher_edit_id_step(message):
+    text = (message.text or "").strip()
+    try:
+        tid = int(text)
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ ID noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, teacher_edit_id_step)
+        return
+    db = load_db()
+    lst = db.get("teachers_custom", [])
+    match = None
+    for t in lst:
+        if t.get("id") == tid:
+            match = t
+            break
+    if not match:
+        msg = bot.send_message(message.chat.id, "❌ Topilmadi. Qayta ID kiriting:")
+        bot.register_next_step_handler(msg, teacher_edit_id_step)
+        return
+    s = {"id": tid}
+    cur = match
+    info_text = (
+        f"Hozirgi ma'lumotlar:\n"
+        f"Ism: {cur.get('name','')}\n"
+        f"Fan: {cur.get('subject','')}\n"
+        f"To'lov: {cur.get('price','')}\n"
+        f"Ma'lumot:\n{cur.get('info','')}\n\n"
+        f"Qaysi maydonni tahrirlaysiz? (Ism/Fan/Ma'lumot/To'lov)"
+    )
+    msg = bot.send_message(message.chat.id, info_text)
+    bot.register_next_step_handler(msg, lambda m: teacher_edit_field_step(m, s))
+
+def teacher_edit_field_step(message, state):
+    field_in = (message.text or "").strip().lower()
+    mapping = {
+        "ism": "name",
+        "familiya": "surname",
+        "fan": "subject",
+        "ma'lumot": "info",
+        "malumot": "info",
+        "to'lov": "price",
+        "tolov": "price",
+        "name": "name",
+        "subject": "subject",
+        "info": "info",
+        "surname": "surname",
+        "price": "price"
+    }
+    field = mapping.get(field_in)
+    if not field:
+        msg = bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov. (Ism/Familiya/Fan/Ma'lumot/To'lov)")
+        bot.register_next_step_handler(msg, lambda m: teacher_edit_field_step(m, state))
+        return
+    state["field"] = field
+    msg = bot.send_message(message.chat.id, "Yangi qiymatni yozing:")
+    bot.register_next_step_handler(msg, lambda m: teacher_edit_apply_step(m, state))
+
+def teacher_edit_apply_step(message, state):
+    value = (message.text or "").strip()
+    db = load_db()
+    lst = db.get("teachers_custom", [])
+    for t in lst:
+        if t.get("id") == state.get("id"):
+            t[state.get("field")] = value
+            break
+    db["teachers_custom"] = lst
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ O'zgarish saqlandi.", reply_markup=back_button())
+
+def teacher_self_edit_field_step(message):
+    user_id = message.from_user.id
+    l = get_teacher_links().get(str(user_id))
+    field_in = (message.text or "").strip().lower()
+    mapping = {
+        "ism": "name",
+        "familiya": "surname",
+        "fan": "subject",
+        "ma'lumot": "info",
+        "malumot": "info",
+        "to'lov": "price",
+        "tolov": "price",
+        "name": "name",
+        "subject": "subject",
+        "info": "info",
+        "surname": "surname",
+        "price": "price"
+    }
+    field = mapping.get(field_in)
+    if not field:
+        msg = bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov. (Ism/Familiya/Fan/Ma'lumot/To'lov)")
+        bot.register_next_step_handler(msg, teacher_self_edit_field_step)
+        return
+    if not l:
+        bot.send_message(message.chat.id, "❌ Bog‘lanmagan.", reply_markup=back_button())
+        return
+    bot.send_message(message.chat.id, "Yangi qiymatni yozing:")
+    bot.register_next_step_handler(message, lambda m: teacher_self_edit_apply_step(m, l, field))
+
+def teacher_self_edit_apply_step(message, link, field):
+    user_id = message.from_user.id
+    value = (message.text or "").strip()
+    if link.get("type") == "base":
+        key = link.get("key")
+        set_teacher_override_field(key, field, value)
+        bot.send_message(message.chat.id, "✅ O'zgarish saqlandi.", reply_markup=back_button())
+    else:
+        db = load_db()
+        lst = db.get("teachers_custom", [])
+        for t in lst:
+            if t.get("id") == link.get("id"):
+                t[field] = value
+                break
+        db["teachers_custom"] = lst
+        save_db(db)
+        bot.send_message(message.chat.id, "✅ O'zgarish saqlandi.", reply_markup=back_button())
+
+def teacher_login_step(message):
+    user_id = message.from_user.id
+    pwd = (message.text or "").strip()
+    ref = find_teacher_ref_by_password(pwd)
+    if ref:
+        # Auto-bind this user to the teacher ref
+        kind, val = ref.split(":", 1)
+        if kind == "base":
+            set_teacher_link(user_id, {"type": "base", "key": val, "subject": val})
+        elif kind == "custom":
+            try:
+                tid = int(val)
+            except:
+                tid = None
+            set_teacher_link(user_id, {"type": "custom", "id": tid})
+        teacher_sessions.add(user_id)
+        show_teacher_panel(message.chat.id, user_id)
+        return
+    # Fallback to global teacher password if configured
+    if TEACHER_PASSWORD and pwd == TEACHER_PASSWORD:
+        teacher_sessions.add(user_id)
+        subj = get_teacher_subject_for_user(user_id)
+        if not subj:
+            kbd = InlineKeyboardMarkup(row_width=1)
+            for k, v in subjects.items():
+                kbd.add(InlineKeyboardButton(v, callback_data=f"tp_set_subject:{k}"))
+            bot.send_message(message.chat.id, "Fan tanlang:", reply_markup=kbd)
+            return
+        show_teacher_panel(message.chat.id, user_id)
+        return
+    msg = bot.send_message(message.chat.id, "❌ Parol xato. Qayta kiriting:")
+    bot.register_next_step_handler(msg, teacher_login_step)
+
+def show_teacher_panel(chat_id, user_id):
+    m = InlineKeyboardMarkup(row_width=2)
+    m.add(
+        InlineKeyboardButton("👨‍🎓 Talabalar", callback_data="tp_students"),
+        InlineKeyboardButton("📊 Statistika", callback_data="tp_stats")
+    )
+    m.add(
+        InlineKeyboardButton("📝 Uy vazifa", callback_data="tp_homework"),
+        InlineKeyboardButton("📢 E'lon", callback_data="tp_announce")
+    )
+    m.add(
+        InlineKeyboardButton("📂 Materiallar", callback_data="tp_materials"),
+        InlineKeyboardButton("🧪 Testlar", callback_data="teacher_self_test")
+    )
+    bot.send_message(chat_id, "👨‍🏫 Teacher Panel", reply_markup=m)
+
+def teacher_delete_step(message):
+    text = (message.text or "").strip()
+    try:
+        tid = int(text)
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ ID noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, teacher_delete_step)
+        return
+    db = load_db()
+    lst = db.get("teachers_custom", [])
+    match = None
+    for t in lst:
+        if t.get("id") == tid:
+            match = t
+            break
+    if not match:
+        bot.send_message(message.chat.id, "❌ Topilmadi.", reply_markup=back_button())
+        return
+    name = match.get("name","")
+    subject = match.get("subject","")
+    price = match.get("price","")
+    info = match.get("info","")
+    txt = f"O'chirishni tasdiqlaysizmi?\n\nIsm: {name}\nFan: {subject}\nTo'lov: {price}\n\n{info}"
+    mk = InlineKeyboardMarkup()
+    mk.add(
+        InlineKeyboardButton("✅ Ha", callback_data=f"confirm_delete_teacher:{tid}"),
+        InlineKeyboardButton("❌ Yo'q", callback_data="cancel_delete_teacher")
+    )
+    bot.send_message(message.chat.id, txt, reply_markup=mk)
+
+def teacher_edit_base_index_step(message):
+    text = (message.text or "").strip()
+    try:
+        idx = int(text) - 1
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ Indeks noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, teacher_edit_base_index_step)
+        return
+    user_id = message.from_user.id
+    keys = admin_edit_state.get(user_id, {}).get("base_keys", [])
+    if idx < 0 or idx >= len(keys):
+        msg = bot.send_message(message.chat.id, "❌ Indeks chegaradan tashqarida. Qayta kiriting:")
+        bot.register_next_step_handler(msg, teacher_edit_base_index_step)
+        return
+    k = keys[idx]
+    admin_edit_state[user_id] = {"key": k}
+    base = teachers.get(k, {})
+    cur = apply_teacher_override(k, base)
+    nm = (cur.get("name","") + (" " + cur.get("surname","") if cur.get("surname") else "")).strip()
+    info_text = (
+        f"Hozirgi ma'lumotlar:\n"
+        f"Ism/Familiya: {nm}\n"
+        f"Fan: {cur.get('subject','')}\n"
+        f"To'lov: {cur.get('price','')}\n"
+        f"Ma'lumot:\n{cur.get('info','')}\n\n"
+        f"Qaysi maydonni tahrirlaysiz? (Ism/Familiya/Fan/Ma'lumot/To'lov)"
+    )
+    msg = bot.send_message(message.chat.id, info_text)
+    bot.register_next_step_handler(msg, teacher_edit_base_field_step)
+
+def teacher_edit_base_field_step(message):
+    user_id = message.from_user.id
+    st = admin_edit_state.get(user_id, {})
+    field_in = (message.text or "").strip().lower()
+    mapping = {
+        "ism": "name",
+        "familiya": "surname",
+        "fan": "subject",
+        "ma'lumot": "info",
+        "malumot": "info",
+        "to'lov": "price",
+        "tolov": "price",
+        "name": "name",
+        "subject": "subject",
+        "info": "info",
+        "surname": "surname",
+        "price": "price"
+    }
+    field = mapping.get(field_in)
+    if not field:
+        msg = bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov. (Ism/Familiya/Fan/Ma'lumot/To'lov)")
+        bot.register_next_step_handler(msg, teacher_edit_base_field_step)
+        return
+    st["field"] = field
+    admin_edit_state[user_id] = st
+    msg = bot.send_message(message.chat.id, "Yangi qiymatni yozing:")
+    bot.register_next_step_handler(msg, teacher_edit_base_apply_step)
+
+def teacher_edit_base_apply_step(message):
+    user_id = message.from_user.id
+    st = admin_edit_state.get(user_id, {})
+    value = (message.text or "").strip()
+    k = st.get("key")
+    f = st.get("field")
+    if not k or not f:
+        bot.send_message(message.chat.id, "❌ Xato. Qayta urinib ko'ring.", reply_markup=back_button())
+        return
+    set_teacher_override_field(k, f, value)
+    bot.send_message(message.chat.id, "✅ O'zgarish saqlandi.", reply_markup=back_button())
+
+def admin_tp_setpwd_input_step(message):
+    admin_id = message.from_user.id
+    if not is_admin(admin_id):
+        bot.send_message(message.chat.id, "Ruxsat yo'q.", reply_markup=back_button())
+        return
+    pwd = (message.text or "").strip()
+    st = admin_edit_state.get(admin_id, {})
+    ref = st.get("tp_ref")
+    if not ref:
+        bot.send_message(message.chat.id, "Xato holat.", reply_markup=back_button())
+        return
+    set_teacher_password_for_ref(ref, pwd)
+    bot.send_message(message.chat.id, f"✅ Parol saqlandi: {teacher_ref_to_name(ref)}", reply_markup=back_button())
+
+def ariza_edit_index_step(message):
+    text = (message.text or "").strip()
+    try:
+        idx = int(text) - 1
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ Indeks noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, ariza_edit_index_step)
+        return
+    db = load_db()
+    lst = db.get("arizalar", [])
+    if idx < 0 or idx >= len(lst):
+        msg = bot.send_message(message.chat.id, "❌ Indeks chegaradan tashqarida. Qayta kiriting:")
+        bot.register_next_step_handler(msg, ariza_edit_index_step)
+        return
+    s = {"idx": idx}
+    msg = bot.send_message(message.chat.id, "Yangi holatni yozing: (yangi/ko'rildi/yakunlandi/bekor)")
+    bot.register_next_step_handler(msg, lambda m: ariza_edit_status_step(m, s))
+
+def ariza_edit_status_step(message, state):
+    status = (message.text or "").strip().lower()
+    allowed = ["yangi", "ko'rildi", "yakunlandi", "bekor"]
+    if status not in allowed:
+        msg = bot.send_message(message.chat.id, "❌ Noto'g'ri holat. (yangi/ko'rildi/yakunlandi/bekor)")
+        bot.register_next_step_handler(msg, lambda m: ariza_edit_status_step(m, state))
+        return
+    db = load_db()
+    lst = db.get("arizalar", [])
+    lst[state.get("idx")]["status"] = status
+    db["arizalar"] = lst
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ Ariza holati yangilandi.", reply_markup=back_button())
+
+def ariza_delete_index_step(message):
+    text = (message.text or "").strip()
+    try:
+        idx = int(text) - 1
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ Indeks noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, ariza_delete_index_step)
+        return
+    db = load_db()
+    lst = db.get("arizalar", [])
+    if idx < 0 or idx >= len(lst):
+        msg = bot.send_message(message.chat.id, "❌ Indeks chegaradan tashqarida. Qayta kiriting:")
+        bot.register_next_step_handler(msg, ariza_delete_index_step)
+        return
+    del lst[idx]
+    db["arizalar"] = lst
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ Ariza o'chirildi.", reply_markup=back_button())
+
+def check_edit_id_step(message):
+    text = (message.text or "").strip()
+    try:
+        cid = int(text)
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ ID noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, check_edit_id_step)
+        return
+    db = load_db()
+    lst = db.get("checks", [])
+    found = False
+    for c in lst:
+        if c.get("id") == cid:
+            found = True
+            break
+    if not found:
+        msg = bot.send_message(message.chat.id, "❌ Chek topilmadi. Qayta kiriting:")
+        bot.register_next_step_handler(msg, check_edit_id_step)
+        return
+    s = {"id": cid}
+    msg = bot.send_message(message.chat.id, "Yangi holatni yozing: (kutilmoqda/tasdiqlandi/rad_etildi)")
+    bot.register_next_step_handler(msg, lambda m: check_edit_status_step(m, s))
+
+def check_edit_status_step(message, state):
+    status = (message.text or "").strip().lower()
+    allowed = ["kutilmoqda", "tasdiqlandi", "rad_etildi"]
+    if status not in allowed:
+        msg = bot.send_message(message.chat.id, "❌ Noto'g'ri holat. (kutilmoqda/tasdiqlandi/rad_etildi)")
+        bot.register_next_step_handler(msg, lambda m: check_edit_status_step(m, state))
+        return
+    db = load_db()
+    lst = db.get("checks", [])
+    for c in lst:
+        if c.get("id") == state.get("id"):
+            c["status"] = status
+            break
+    db["checks"] = lst
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ Chek holati yangilandi.", reply_markup=back_button())
+
+def check_delete_id_step(message):
+    text = (message.text or "").strip()
+    try:
+        cid = int(text)
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ ID noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, check_delete_id_step)
+        return
+    db = load_db()
+    lst = db.get("checks", [])
+    new_lst = [c for c in lst if c.get("id") != cid]
+    if len(new_lst) == len(lst):
+        bot.send_message(message.chat.id, "❌ Chek topilmadi.", reply_markup=back_button())
+        return
+    db["checks"] = new_lst
+    save_db(db)
+    bot.send_message(message.chat.id, "✅ Chek o'chirildi.", reply_markup=back_button())
+
+def subscriber_delete_id_step(message):
+    text = (message.text or "").strip()
+    try:
+        sid = int(text)
+    except Exception:
+        msg = bot.send_message(message.chat.id, "❌ ID noto'g'ri. Qayta kiriting:")
+        bot.register_next_step_handler(msg, subscriber_delete_id_step)
+        return
+    remove_subscriber(sid)
+    bot.send_message(message.chat.id, "✅ Obunachi o'chirildi.", reply_markup=back_button())
 
 # --- CHECK/PAYMENT FORM HANDLERS ---
 def check_name(message):
@@ -2231,7 +3834,7 @@ def handle_photo_upload(message):
     )
     subject_name = subjects.get(check_entry["subject"], check_entry["subject"])
     admin_msg = f"📩 Yangi chek:\n👤 {check_entry['name']}\n👨‍🏫 {check_entry['teacher']}\n📂 {subject_name}\n💰 {check_entry['amount']} so'm\n🕒 {check_entry['time']}\n✅ ID: {check_id}"
-    for admin in ADMINS:
+    for admin in all_admins():
         try:
             bot.send_photo(admin, photo_id, caption=admin_msg, reply_markup=admin_confirmation)
         except:
