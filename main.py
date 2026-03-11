@@ -9,6 +9,9 @@ import re
 import uuid
 from urllib.request import urlopen
 from pypdf import PdfReader
+from zoneinfo import ZoneInfo
+
+TASHKENT_TZ = ZoneInfo("Asia/Tashkent")
         
 load_dotenv()
 
@@ -2855,7 +2858,7 @@ def callback(call):
                 "name": form.get("name"),
                 "phone": form.get("phone"),
                 "subject": form.get("subject"),
-                "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "time": datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d %H:%M"),
             "status": "yangi",
             "user_id": int(user_id)
             }
@@ -2898,7 +2901,7 @@ def show_quiz_question(chat_id, quiz_key, question_idx, score):
             "subject": subj,
             "score": int(score),
             "total": int(total),
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M")
+            "time": datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d %H:%M")
         })
         db["quiz_results"] = res
         save_db(db)
@@ -2913,7 +2916,7 @@ def show_quiz_question(chat_id, quiz_key, question_idx, score):
         markup.add(InlineKeyboardButton(option, callback_data=callback_data))
     
     user_quiz_state[chat_id] = {"quiz_key": quiz_key, "question_idx": question_idx, "score": score}
-    quiz_question_time[chat_id] = datetime.now()  # Record when question was shown
+    quiz_question_time[chat_id] = datetime.now(TASHKENT_TZ)  # Record when question was shown
     
     msg = f"Savol {question_idx + 1}/{len(questions)}:\n\n⏱️ Vaqt: {QUIZ_TIME_LIMIT} soniya\n\n{q['q']}"
     bot.send_message(chat_id, msg, reply_markup=markup)
@@ -2936,7 +2939,7 @@ def handle_quiz_answer(call):
         show_quiz_question(chat_id, quiz_key, question_idx + 1, score)
         return
     
-    time_elapsed = (datetime.now() - quiz_question_time[chat_id]).total_seconds()
+    time_elapsed = (datetime.now(TASHKENT_TZ) - quiz_question_time[chat_id]).total_seconds()
     
     if time_elapsed > QUIZ_TIME_LIMIT:
         # Vaqt tugadi
@@ -3398,10 +3401,10 @@ def teacher_homework_receive(message):
     hw = db.get("teacher_homeworks", {})
     arr = hw.get(str(user_id), [])
     if getattr(message, "document", None):
-        arr.append({"type": "file", "file_id": message.document.file_id, "file_name": message.document.file_name, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+        arr.append({"type": "file", "file_id": message.document.file_id, "file_name": message.document.file_name, "time": datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d %H:%M")})
     else:
         text = (message.text or "").strip()
-        arr.append({"type": "text", "text": text, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+        arr.append({"type": "text", "text": text, "time": datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d %H:%M")})
     hw[str(user_id)] = arr
     db["teacher_homeworks"] = hw
     save_db(db)
@@ -3435,11 +3438,11 @@ def teacher_material_add_step(message):
     mats = db.get("teacher_materials", {})
     arr = mats.get(str(user_id), [])
     if getattr(message, "document", None):
-        arr.append({"type": "file", "file_id": message.document.file_id, "file_name": message.document.file_name, "title": message.document.file_name, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+        arr.append({"type": "file", "file_id": message.document.file_id, "file_name": message.document.file_name, "title": message.document.file_name, "time": datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d %H:%M")})
     else:
         text = (message.text or "").strip()
         title = text[:40] + ("..." if len(text) > 40 else "")
-        arr.append({"type": "text", "text": text, "title": title, "time": datetime.now().strftime("%Y-%m-%d %H:%M")})
+        arr.append({"type": "text", "text": text, "title": title, "time": datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d %H:%M")})
     mats[str(user_id)] = arr
     db["teacher_materials"] = mats
     save_db(db)
@@ -3989,7 +3992,7 @@ def handle_photo_upload(message):
         "subject": form_data.get("subject", "N/A"),
         "amount": form_data.get("amount", "N/A"),
         "photo_id": photo_id,
-        "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "time": datetime.now(TASHKENT_TZ).strftime("%Y-%m-%d %H:%M"),
         "status": "kutilmoqda"  # pending
     }
     db["checks"].append(check_entry)
