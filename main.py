@@ -6,29 +6,112 @@ from dotenv import load_dotenv
 from datetime import datetime
 import random 
 import re
+import uuid
 from urllib.request import urlopen
         
 load_dotenv()
 
+# --- FIX 1: BOT_TOKEN None tekshiruvi ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN environment variable o'rnatilmagan! Railway > Variables ga qo'shing.")
+
 ADMINS = [6340253146]
 bot = telebot.TeleBot(BOT_TOKEN)
 TEACHER_PASSWORD = os.getenv("TEACHER_PASSWORD")
 
-DB_FILE = "db.json"
+# Cache bot info to avoid repeated API calls
+_bot_me = None
+def get_bot_me():
+    global _bot_me
+    if _bot_me is None:
+        _bot_me = bot.get_me()
+    return _bot_me
+
 user_languages = {}  # {user_id: language}
 chat_mode = {}        # {user_id: True} – chat rejimida ekanligini bildiradi
 
-# --- JSON DATABASE ---
+# --- POSTGRESQL DATABASE (Neon) ---
+import psycopg2
+from psycopg2.extras import Json
+from psycopg2 import pool as pg_pool
+
+# --- FIX 2: Hardcoded URL olib tashlandi - faqat env dan o'qiydi ---
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("❌ DATABASE_URL environment variable o'rnatilmagan! Railway > Variables ga qo'shing.")
+
+# --- FIX 4: Connection pool - har safar yangi konneksiya emas ---
+_db_pool = None
+
+def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = pg_pool.SimpleConnectionPool(1, 5, DATABASE_URL)
+    return _db_pool
+
+def get_conn():
+    try:
+        return get_db_pool().getconn()
+    except Exception:
+        # Pool ishlamasa to'g'ridan-to'g'ri ulan
+        return psycopg2.connect(DATABASE_URL)
+
+def release_conn(conn):
+    try:
+        get_db_pool().putconn(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+def init_db():
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS botdata (
+                    key TEXT PRIMARY KEY,
+                    value JSONB
+                )
+            """)
+            conn.commit()
+    except Exception as e:
+        print(f"init_db xatosi: {e}")
+    finally:
+        release_conn(conn)
+
+init_db()
+
 def load_db():
-    if not os.path.exists(DB_FILE):
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT value FROM botdata WHERE key = 'main'")
+            row = cur.fetchone()
+            if row:
+                return row[0]
+            return {"students": [], "arizalar": []}
+    except Exception as e:
+        print(f"load_db xatosi: {e}")
         return {"students": [], "arizalar": []}
-    with open(DB_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    finally:
+        release_conn(conn)
 
 def save_db(data):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO botdata (key, value) VALUES ('main', %s)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+            """, (Json(data),))
+            conn.commit()
+    except Exception as e:
+        print(f"save_db xatosi: {e}")
+    finally:
+        release_conn(conn)
 
 
 def all_admins():
@@ -93,9 +176,9 @@ def detect_and_set_language(message):
     elif any(g in text for g in ["こんにちは", "こんばんは"]):
         detected = "日本語"
 
-    # If nothing detected, return existing language (if any)
+    # If nothing detected, default O'zbek
     if not detected:
-        return user_languages.get(user_id)
+        detected = user_languages.get(user_id, "O'zbek")
 
     # If detected language differs from stored one, update and persist
     prev = user_languages.get(user_id)
@@ -970,11 +1053,10 @@ quiz_data = {
 
 # --- BOT ASSISTANT RESPONSES ---
 assistant_responses = {
-    "python": "💻 Python dasturlash kursi 3 oy davom etadi, haftada 3 dars. Narxi 600.000 so'm.",
-    "web": "🌐 Web dasturlash kursi HTML, CSS, JavaScript va React o'rgatadi. 3 oy davomiyligi, 500.000 so'm.",
-    "android": "📱 Android dasturlash kursi Kotlin/Java o'rgatadi. 4 oy davomiyligi, 700.000 so'm.",
+    "python": "💻 Python dasturlash kursi 3 oy davom etadi, haftada 3 dars. Narxi 400.000 so'm.",
+    "web": "🌐 Web dasturlash kursi HTML, CSS, JavaScript va React o'rgatadi. 3 oy davomiyligi, 400.000 so'm.",
     "kurs": "📚 Bizda turli xil kurslar mavjud: kerakli kursni tanlab o'qishingiz mumkin.",
-    "narx": "💰 Kurslar narxi 300.000 dan 700.000 so'm gacha.",
+    "narx": "💰 Kurslar narxi 300.000 dan 600.000 so'm gacha.",
     "vaqt": "⏰ Darslar haftada 3-4 kun bo'ladi.",
     "o'qituvchi": "👨‍🏫 Bizda tajribali o'qituvchilar bor.",
     "ariza": "📝 Kursga yozilish uchun arizalar bo'limiga boring.",
@@ -987,7 +1069,6 @@ assistant_knowledge = {
     "O'zbek": {
         "python": "💻 Python kursi 3 oy davom etadi, hafta 3 marta dars bo'ladi.",
         "web": "🌐 Web kursi HTML, CSS, JS va React'ni qamrab oladi.",
-        "android": "📱 Android kursi Kotlin/Java bo'yicha.",
         "kurs": "📚 Bizda bir nechta kurs mavjud — qaysi birini xohlaysiz?",
         "narx": "💰 Kurslar narxi kursga qarab 300k-700k orasida.",
         "vaqt": "⏰ Darslar odatda haftada 3-4 marta bo'ladi.",
@@ -997,7 +1078,6 @@ assistant_knowledge = {
     "English": {
         "python": "💻 The Python course runs for 3 months, three lessons per week.",
         "web": "🌐 Web course covers HTML, CSS, JavaScript and React.",
-        "android": "📱 Android course focuses on Kotlin/Java.",
         "price": "💰 Prices range from 300k to 700k depending on the course.",
         "hours": "⏰ Classes usually happen 3-4 times per week."
     },
@@ -1359,7 +1439,7 @@ def parse_test_text(text):
             if m2:
                 try:
                     correct = int(m2.group(2)) - 1
-                except:
+                except Exception:
                     pass
         if len(opts) >= 2:
             if correct is None or correct < 0 or correct >= len(opts):
@@ -1450,7 +1530,7 @@ def teacher_ref_to_name(ref):
     if kind == "custom":
         try:
             tid = int(val)
-        except:
+        except Exception:
             return ref
         for t in get_custom_teachers():
             if t.get("id") == tid:
@@ -1479,6 +1559,8 @@ def start(message):
     user_id = message.from_user.id
     if user_id in chat_mode:
         del chat_mode[user_id]  # chat rejimidan chiqish
+    # FIX 7: /start da avtomatik obunaga qo'shish + admin xabari
+    add_subscriber(user_id, user=message.from_user)
     # Try auto-detect language and greet accordingly
     detect_and_set_language(message)
     user_lang = user_languages.get(message.from_user.id, "O'zbek")
@@ -1508,27 +1590,18 @@ def handle_greeting(message):
     # First try auto-detection; if not set, show language menu
     detect_and_set_language(message)
     user_id = message.from_user.id
-    if user_id in user_languages:
-        # Already detected and set — show localized chat prompt
-        lang = user_languages[user_id]
-        lang_messages = {
-            "O'zbek": "🇺🇿 Til avtomatik aniqlandi! Endi menyudan davom eting.",
-            "English": "🇬🇧 Language auto-detected! Continue from the menu.",
-            "Русский": "🇷🇺 Язык определён автоматически! Продолжайте из меню.",
-            "Turkish": "🇹🇷 Dil otomatik algılandı! Menüden devam edin.",
-            "한국어": "🇰🇷 언어가 자동으로 감지되었습니다! 메뉴에서 계속 하세요.",
-            "العربية": "🇸🇦 تم اكتشاف اللغة تلقائيًا! تابع من القائمة.",
-            "中文": "🇨🇳 语言已自动检测！请从菜单继续.",
-            "日本語": "🇯🇵 言語が自動的に検出されました！メニューから続行してください。"
-        }
-        bot.send_message(message.chat.id, lang_messages.get(lang, lang_messages["O'zbek"]), reply_markup=main_menu_lang(lang))
-    else:
-        bot.send_message(
-            message.chat.id,
-            "👋 Xush kelibsiz! Iltimos til tanlang:\n\n*Choose your language:*\n*Выберите язык:*\n*Dil seçiniz:*\n*언어를 선택하십시오:*\n*اختر لغتك:*\n*请选择语言:*\n*言語を選択してください:*",
-            parse_mode="Markdown",
-            reply_markup=language_menu()
-        )
+    lang = user_languages.get(user_id, "O'zbek")
+    lang_messages = {
+        "O'zbek": "🇺🇿 Xush kelibsiz! Menyudan davom eting.",
+        "English": "🇬🇧 Welcome! Continue from the menu.",
+        "Русский": "🇷🇺 Добро пожаловать! Продолжайте из меню.",
+        "Turkish": "🇹🇷 Hoş geldiniz! Menüden devam edin.",
+        "한국어": "🇰🇷 환영합니다! 메뉴에서 계속 하세요.",
+        "العربية": "🇸🇦 أهلاً وسهلاً! تابع من القائمة.",
+        "中文": "🇨🇳 欢迎！请从菜单继续.",
+        "日本語": "🇯🇵 ようこそ！メニューから続行してください。"
+    }
+    bot.send_message(message.chat.id, lang_messages.get(lang, lang_messages["O'zbek"]), reply_markup=main_menu_lang(lang))
 
 # --- EXIT COMMAND ---
 @bot.message_handler(commands=['exit'])
@@ -1546,8 +1619,9 @@ def handle_text_message(message):
 
     # Guruh xabarlarini filtrlash
     if message.chat.type in ["group", "supergroup"]:
-        is_reply = message.reply_to_message and message.reply_to_message.from_user.id == bot.get_me().id
-        is_mention = f"@{bot.get_me().username}" in (message.text or "")
+        me = get_bot_me()
+        is_reply = message.reply_to_message and message.reply_to_message.from_user.id == me.id
+        is_mention = f"@{me.username}" in (message.text or "")
         if not (is_reply or is_mention):
             return
 
@@ -1601,12 +1675,44 @@ def set_user_name(user_id, name):
     db["names"][str(user_id)] = name
     save_db(db)
 
-def add_subscriber(user_id):
+def notify_admins_new_member(user):
+    """Yangi a'zo qo'shilganda adminlarga xabar yuboradi"""
+    user_id = user.id
+    first_name = user.first_name or ""
+    last_name = user.last_name or ""
+    full_name = (first_name + " " + last_name).strip() or "Nomsiz"
+    username = user.username
+
+    # Profilga havola: username bo'lsa @username, bo'lmasa tg://user?id=...
+    if username:
+        link = f"https://t.me/{username}"
+    else:
+        link = f"tg://user?id={user_id}"
+
+    msg = (
+        f"🔔 Botga yangi a'zo qo'shildi\n\n"
+        f"👤 <a href=\"{link}\">{full_name}</a>\n"
+        f"🆔 ID: <code>{user_id}</code>"
+    )
+    if username:
+        msg += f"\n📱 @{username}"
+
+    for admin_id in all_admins():
+        try:
+            bot.send_message(admin_id, msg, parse_mode="HTML")
+        except Exception:
+            pass
+
+def add_subscriber(user_id, user=None):
     db = load_db()
     subs = set(db.get("subscribers", []))
+    is_new = int(user_id) not in subs
     subs.add(int(user_id))
     db["subscribers"] = list(subs)
     save_db(db)
+    # Faqat YANGI a'zolar haqida adminlarga xabar
+    if is_new and user is not None:
+        notify_admins_new_member(user)
 
 def remove_subscriber(user_id):
     db = load_db()
@@ -1698,7 +1804,7 @@ def callback(call):
         bot.answer_callback_query(call.id)
         try:
             bot.delete_message(chat_id, call.message.message_id)
-        except:
+        except Exception:
             pass
         return
 
@@ -1940,6 +2046,7 @@ def callback(call):
         m.add(InlineKeyboardButton("📄 Test yuklash (PDF/TXT)", callback_data="admin_test_upload"))
         m.add(InlineKeyboardButton("👨‍🏫 O'qituvchi bo'limi", callback_data="admin_teachers_section"))
         m.add(InlineKeyboardButton("🧩 Ma'lumotlarni tahrirlash", callback_data="admin_manage_data"))
+        m.add(InlineKeyboardButton("🔙 Orqaga", callback_data="back"))
         bot.edit_message_text("🛠 Admin paneli", call.message.chat.id, call.message.message_id, reply_markup=m)
 
     elif call.data == "admin_stats":
@@ -1947,6 +2054,7 @@ def callback(call):
             bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
             return
         subs = len(db.get("subscribers", []))
+        students = len(db.get("students", []))
         arizalar = db.get("arizalar", [])
         checks = db.get("checks", [])
         ariza_count = len(arizalar)
@@ -1954,15 +2062,18 @@ def callback(call):
         checks_ok = sum(1 for c in checks if c.get("status") == "tasdiqlandi")
         checks_rej = sum(1 for c in checks if c.get("status") == "rad_etildi")
         langs = db.get("user_languages", {})
+        admins_list = db.get("admins", [])
         msg = (
             f"📊 Statistika\n"
+            f"🎓 Talabalar: {students}\n"
             f"👥 Obunachilar: {subs}\n"
             f"📝 Arizalar: {ariza_count}\n"
             f"🧾 Cheklar: {len(checks)}\n"
             f"  • Kutilmoqda: {checks_pending}\n"
             f"  • Tasdiqlangan: {checks_ok}\n"
             f"  • Rad etilgan: {checks_rej}\n"
-            f"🌐 Tillar saqlangan: {len(langs)}"
+            f"👨‍💼 Adminlar: {len(admins_list) + len(ADMINS)}\n"
+            f"🌐 Foydalanuvchilar: {len(langs)}"
         )
         bot.edit_message_text(msg, call.message.chat.id, call.message.message_id, reply_markup=back_button())
 
@@ -2016,7 +2127,11 @@ def callback(call):
         if not is_admin(call.from_user.id):
             bot.answer_callback_query(call.id, "Sizga ruxsat yo'q!")
             return
-        msg = bot.send_message(call.message.chat.id, "📢 E'lon matnini yozing:")
+        msg = bot.send_message(
+            call.message.chat.id,
+            "📢 E'lon matnini yozing:",
+            reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("🔙 Bekor qilish", callback_data="admin"))
+        )
         bot.register_next_step_handler(msg, admin_broadcast_step)
 
     elif call.data == "admin_manage_data":
@@ -2042,6 +2157,7 @@ def callback(call):
             InlineKeyboardButton("🗑 Chekni o'chirish", callback_data="admin_check_delete")
         )
         m.add(InlineKeyboardButton("🗑 Obunachini o'chirish", callback_data="admin_subscriber_delete"))
+        m.add(InlineKeyboardButton("🔙 Orqaga", callback_data="admin"))
         bot.edit_message_text("🧩 Ma'lumotlarni tahrirlash", call.message.chat.id, call.message.message_id, reply_markup=m)
 
     elif call.data == "admin_teachers_section":
@@ -2166,7 +2282,7 @@ def callback(call):
         bot.answer_callback_query(call.id, "Yaxshi, menyudan davom eting.")
         try:
             bot.edit_message_text("Bekor qilindi.", call.message.chat.id, call.message.message_id, reply_markup=back_button())
-        except:
+        except Exception:
             pass
     elif call.data == "admin_remove_admin":
         if not is_primary_admin(call.from_user.id):
@@ -2226,7 +2342,7 @@ def callback(call):
             return
         try:
             tid = int(call.data.split(":",1)[1])
-        except:
+        except Exception:
             bot.answer_callback_query(call.id, "ID xato")
             return
         db = load_db()
@@ -2267,7 +2383,7 @@ def callback(call):
             return
         try:
             tid = int(call.data.split(":",1)[1])
-        except:
+        except Exception:
             bot.answer_callback_query(call.id, "ID xato")
             return
         db = load_db()
@@ -2327,6 +2443,7 @@ def callback(call):
         kbd = InlineKeyboardMarkup(row_width=1)
         for k, v in subjects.items():
             kbd.add(InlineKeyboardButton(v, callback_data=f"admin_ariza_notify_subject_select:{k}"))
+        kbd.add(InlineKeyboardButton("🔙 Orqaga", callback_data="admin_manage_data"))
         bot.edit_message_text("Fan tanlang:", call.message.chat.id, call.message.message_id, reply_markup=kbd)
 
     elif call.data.startswith("admin_ariza_notify_subject_select:"):
@@ -2447,7 +2564,7 @@ def callback(call):
         bot.answer_callback_query(call.id)
         try:
             bot.delete_message(chat_id, call.message.message_id)
-        except:
+        except Exception:
             pass
     
     elif call.data == "teacher_panel":
@@ -2468,7 +2585,7 @@ def callback(call):
         user_id = call.from_user.id
         try:
             tid = int(call.data.split(":",1)[1])
-        except:
+        except Exception:
             bot.answer_callback_query(call.id, "ID xato")
             return
         dbt = get_custom_teachers()
@@ -2715,7 +2832,7 @@ def callback(call):
             for admin in all_admins():
                 try:
                     bot.send_message(admin, admin_text)
-                except:
+                except Exception:
                     pass
             
             del user_form_state[user_id]
@@ -2845,7 +2962,7 @@ def admin_test_receive_file(message):
             for p in reader.pages:
                 try:
                     pages.append(p.extract_text() or "")
-                except:
+                except Exception:
                     pages.append("")
             text = "\n".join(pages)
         except Exception:
@@ -3093,7 +3210,7 @@ def admin_add_admin_step(message):
         if a != user_id:
             try:
                 bot.send_message(a, f"🆕 Yangi admin qo'shildi: {new_admin_id}")
-            except:
+            except Exception:
                 pass
 
 def admin_broadcast_step(message):
@@ -3113,7 +3230,7 @@ def admin_broadcast_step(message):
         try:
             bot.send_message(int(sid), text)
             sent += 1
-        except:
+        except Exception:
             pass
     bot.send_message(message.chat.id, f"📢 E'lon {sent} obunachiga yuborildi.", reply_markup=back_button())
 
@@ -3418,7 +3535,7 @@ def teacher_login_step(message):
         elif kind == "custom":
             try:
                 tid = int(val)
-            except:
+            except Exception:
                 tid = None
             set_teacher_link(user_id, {"type": "custom", "id": tid})
         teacher_sessions.add(user_id)
@@ -3800,7 +3917,7 @@ def handle_photo_upload(message):
     if "checks" not in db:
         db["checks"] = []
     
-    check_id = len(db["checks"]) + 1
+    check_id = max((c.get("id", 0) for c in db["checks"]), default=0) + 1
     check_entry = {
         "id": check_id,
         "user_id": user_id,
@@ -3837,7 +3954,7 @@ def handle_photo_upload(message):
     for admin in all_admins():
         try:
             bot.send_photo(admin, photo_id, caption=admin_msg, reply_markup=admin_confirmation)
-        except:
+        except Exception:
             pass
 
 @bot.message_handler(content_types=['photo', 'document', 'audio', 'voice', 'location', 'contact', 'sticker', 'video'])
@@ -3872,7 +3989,3 @@ if __name__ == "__main__":
         bot.infinity_polling(timeout=10, long_polling_timeout=5)
     except Exception as e:
         print(f"❌ Botda kutilmagan xatolik: {e}")
-
-
-
-
