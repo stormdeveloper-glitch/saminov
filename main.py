@@ -1930,6 +1930,7 @@ def callback(call):
         return
 
     if call.data == "kurslar":
+        bot.answer_callback_query(call.id)
         markup = InlineKeyboardMarkup(row_width=1)
         for k, v in subjects.items():
             markup.add(InlineKeyboardButton(v, callback_data=f"subject:{k}"))
@@ -1943,6 +1944,7 @@ def callback(call):
 
     # TRIAL KURS
     elif call.data == "trial":
+        bot.answer_callback_query(call.id)
         text = "💻 Trial kurs:\nPython dasturlashning kirish darslari bepul."
         bot.edit_message_text(
             text, call.message.chat.id, call.message.message_id,
@@ -1951,6 +1953,7 @@ def callback(call):
     
     # motivation quote
     elif call.data == "motivation":
+        bot.answer_callback_query(call.id)
         quote = send_motivation(call.from_user.id if hasattr(call, 'from_user') else call.message.chat.id)
         bot.edit_message_text(
             quote,
@@ -1974,6 +1977,7 @@ def callback(call):
     
     # O‘QITUVCHILAR
     elif call.data == "teachers":
+        bot.answer_callback_query(call.id)
         markup = InlineKeyboardMarkup(row_width=1)
         for key in teachers:
             t = apply_teacher_override(key, teachers[key])
@@ -2000,6 +2004,7 @@ def callback(call):
 
     # FANLAR — subjects tugmalari (xuddi kurslar bilan bir xil)
     elif call.data == "subjects":
+        bot.answer_callback_query(call.id)
         markup = InlineKeyboardMarkup(row_width=1)
         for k, v in subjects.items():
             markup.add(InlineKeyboardButton(v, callback_data=f"subject:{k}"))
@@ -2013,11 +2018,13 @@ def callback(call):
     
     # ARIZALAR
     elif call.data == "arizalar":
+        bot.answer_callback_query(call.id)
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
             InlineKeyboardButton("📄 Kursga yozilish", callback_data="ariza_course"),
             InlineKeyboardButton("💼 Ishga kirish", callback_data="ariza_job"),
         )
+        markup.add(InlineKeyboardButton("🔙 Orqaga", callback_data="back"))
         bot.edit_message_text(
             "📝 Ariza bo‘limi",
             call.message.chat.id,
@@ -2505,16 +2512,25 @@ def callback(call):
 
     # BACK
     elif call.data == "back":
+        bot.answer_callback_query(call.id)
         lang = get_user_lang(call.from_user.id)
-        bot.edit_message_text(
-            localized_texts["welcome"].get(lang, localized_texts["welcome"]["O'zbek"]),
-            call.message.chat.id,
-            call.message.message_id,
-            reply_markup=main_menu_lang(lang)
-        )    
+        try:
+            bot.edit_message_text(
+                localized_texts["welcome"].get(lang, localized_texts["welcome"]["O'zbek"]),
+                call.message.chat.id,
+                call.message.message_id,
+                reply_markup=main_menu_lang(lang)
+            )
+        except Exception:
+            bot.send_message(
+                call.message.chat.id,
+                localized_texts["welcome"].get(lang, localized_texts["welcome"]["O'zbek"]),
+                reply_markup=main_menu_lang(lang)
+            )
     
     # QUIZ
     elif call.data == "quiz":
+        bot.answer_callback_query(call.id)
         markup = InlineKeyboardMarkup(row_width=1)
         for k in quiz_data.keys():
             markup.add(InlineKeyboardButton(quiz_data[k]["name"], callback_data=f"quiz:{k}"))
