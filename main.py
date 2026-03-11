@@ -10,7 +10,7 @@ from urllib.request import urlopen
         
 load_dotenv()
 
-BOT_TOKEN= os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMINS = [6340253146]
 bot = telebot.TeleBot(BOT_TOKEN)
 TEACHER_PASSWORD = os.getenv("TEACHER_PASSWORD")
@@ -3872,4 +3872,5 @@ if __name__ == "__main__":
         bot.infinity_polling(timeout=10, long_polling_timeout=5)
     except Exception as e:
         print(f"❌ Botda kutilmagan xatolik: {e}")
+
 
