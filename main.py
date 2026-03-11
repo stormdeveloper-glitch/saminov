@@ -1,5 +1,5 @@
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 import json
 import os
 from dotenv import load_dotenv  
@@ -8,6 +8,7 @@ import random
 import re
 import uuid
 from urllib.request import urlopen
+from pypdf import PdfReader
         
 load_dotenv()
 
@@ -2771,7 +2772,27 @@ def callback(call):
         user_id = call.from_user.id
         lang = get_user_lang(user_id)
         if user_id in user_form_state:
-            msg = bot.send_message(call.message.chat.id, "📞 Telefon raqamingizni yozing:")
+            # Kontakt ulashish tugmasi
+            phone_markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+            share_btn_text = {
+                "O'zbek": "📱 Telefon raqamni ulashish",
+                "English": "📱 Share phone number",
+                "Русский": "📱 Поделиться номером"
+            }
+            phone_markup.add(KeyboardButton(
+                share_btn_text.get(lang, share_btn_text["O'zbek"]),
+                request_contact=True
+            ))
+            ask_phone_text = {
+                "O'zbek": "📞 Telefon raqamingizni yozing yoki tugmani bosing:",
+                "English": "📞 Enter your phone number or press the button:",
+                "Русский": "📞 Введите номер телефона или нажмите кнопку:"
+            }
+            msg = bot.send_message(
+                call.message.chat.id,
+                ask_phone_text.get(lang, ask_phone_text["O'zbek"]),
+                reply_markup=phone_markup
+            )
             form_type = user_form_state[user_id]["type"]
             if form_type == "kurs":
                 bot.register_next_step_handler(msg, lambda m: course_phone(m, user_form_state[user_id]["name"]))
@@ -3074,9 +3095,22 @@ def job_name(message):
 def course_phone(message, name):
     user_id = message.from_user.id
     lang = get_user_lang(user_id)
-    phone = message.text.strip()
-    
-    # Store phone in form state
+
+    # Kontakt ulashilgan bo'lsa
+    if message.contact:
+        phone = message.contact.phone_number
+        if not phone.startswith("+"):
+            phone = "+" + phone
+    elif message.text:
+        phone = message.text.strip()
+    else:
+        msg = bot.send_message(message.chat.id, "❌ Telefon raqamni yozing yoki tugmani bosing:")
+        bot.register_next_step_handler(msg, lambda m: course_phone(m, name))
+        return
+
+    # Klaviaturani yopamiz
+    bot.send_message(message.chat.id, "✅", reply_markup=ReplyKeyboardRemove())
+
     if user_id in user_form_state:
         user_form_state[user_id]["phone"] = phone
         if user_form_state[user_id].get("strict_phone"):
@@ -3084,29 +3118,42 @@ def course_phone(message, name):
                 msg = bot.send_message(message.chat.id, "❌ Telefon raqam noto'g'ri. Iltimos 907877157 ni kiriting:")
                 bot.register_next_step_handler(msg, lambda m: course_phone(m, name))
                 return
-    
-    # Ask for confirmation
+
     confirm_markup = InlineKeyboardMarkup()
     confirm_markup.add(
         InlineKeyboardButton("✅ Ha", callback_data="ariza_confirm_phone_yes"),
         InlineKeyboardButton("❌ Yo'q", callback_data="ariza_confirm_phone_no")
     )
-    bot.send_message(message.chat.id, f"✅ Telefon: {phone} — to'g'rimi?", reply_markup=confirm_markup)
+    bot.send_message(message.chat.id, f"📞 Telefon: {phone} — to'g'rimi?", reply_markup=confirm_markup)
 
 def job_phone(message, name):
     user_id = message.from_user.id
     lang = get_user_lang(user_id)
-    phone = message.text.strip()
-    
+
+    # Kontakt ulashilgan bo'lsa
+    if message.contact:
+        phone = message.contact.phone_number
+        if not phone.startswith("+"):
+            phone = "+" + phone
+    elif message.text:
+        phone = message.text.strip()
+    else:
+        msg = bot.send_message(message.chat.id, "❌ Telefon raqamni yozing yoki tugmani bosing:")
+        bot.register_next_step_handler(msg, lambda m: job_phone(m, name))
+        return
+
+    # Klaviaturani yopamiz
+    bot.send_message(message.chat.id, "✅", reply_markup=ReplyKeyboardRemove())
+
     if user_id in user_form_state:
         user_form_state[user_id]["phone"] = phone
-    
+
     confirm_markup = InlineKeyboardMarkup()
     confirm_markup.add(
         InlineKeyboardButton("✅ Ha", callback_data="ariza_confirm_phone_yes"),
         InlineKeyboardButton("❌ Yo'q", callback_data="ariza_confirm_phone_no")
     )
-    bot.send_message(message.chat.id, f"✅ Telefon: {phone} — to'g'rimi?", reply_markup=confirm_markup)
+    bot.send_message(message.chat.id, f"📞 Telefon: {phone} — to'g'rimi?", reply_markup=confirm_markup)
 
 def show_subject_selection(chat_id, user_id):
     lang = get_user_lang(user_id)
@@ -3977,6 +4024,23 @@ def handle_photo_upload(message):
 def handle_media(message):
     """Handle media messages"""
     user_id = message.from_user.id
+
+    # Kontakt ulashilsa — next_step_handler ga uzatamiz (phone step uchun)
+    if message.content_type == 'contact':
+        if user_id in user_form_state:
+            # next_step_handler o'zi oladi, shu yerda qayta chaqirishga hojat yo'q
+            return
+        lang = get_user_lang(user_id)
+        phone = message.contact.phone_number
+        if not phone.startswith("+"):
+            phone = "+" + phone
+        bot.send_message(
+            message.chat.id,
+            f"📞 Telefon raqamingiz: {phone}",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
+
     if user_id in check_form_states:
         handle_photo_upload(message)
         return
