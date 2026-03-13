@@ -311,9 +311,9 @@ teachers = {
         "subject": "Kimyo",
         "experience": "5 yil",
         "students": "400+",
-        "price": "450.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Kimyo fanining murakkab mavzularini sodda tilda tushuntira oladigan tajribali o'qituvchi. Laboratoriya ishlariga alohida e'tibor beradi.",
-               "education": "O'zMU, Kimyo fakulteti (2019)",
+        "education": "O'zMU, Kimyo fakulteti (2019)",
         "achievements": "2023-yil 'Eng yaxshi kimyo o'qituvchisi' sovrindori",
         "info": """
 👨‍🏫 <b>O'QITUVCHI: SAMINOV HUSNIDIN</b>
@@ -322,7 +322,7 @@ teachers = {
 🧪 <b>Fan:</b> Kimyo
 ⏳ <b>Tajriba:</b> 5 yil
 👥 <b>O'quvchilar soni:</b> 400+
-💰 <b>To'lov:</b> 450.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 🎓 <b>Ma'lumoti:</b> O'zMU, Kimyo fakulteti (2019)
 
 📝 <b>BIOGRAFIYA:</b>
@@ -333,7 +333,6 @@ Kimyo fanining murakkab mavzularini sodda tilda tushuntira oladigan tajribali o'
 • 3 ta ilmiy maqola muallifi
 • 50+ o'quvchisi tibbiyot institutlariga qabul qilingan
 
-📞 <b>Bog'lanish:</b>
 
 
 ⭐️ <b>O'QUVCHILAR FIKRI:</b>
@@ -345,10 +344,10 @@ Kimyo fanining murakkab mavzularini sodda tilda tushuntira oladigan tajribali o'
         "subject": "Kimyo",
         "experience": "3 yil",
         "students": "250+",
-        "price": "400.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Yosh va kreativ yondashuvga ega kimyo o'qituvchisi. Darslarida zamonaviy pedagogik texnologiyalarni qo'llaydi.",
         "phone": "+998902345678",
-               "education": "Toshkent Kimyo Texnologiya Instituti",
+        "education": "Toshkent Kimyo Texnologiya Instituti",
         "info": """
 👨‍🏫 <b>O'QITUVCHI: ISAJONOV BEKZOD</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -356,7 +355,7 @@ Kimyo fanining murakkab mavzularini sodda tilda tushuntira oladigan tajribali o'
 🧪 <b>Fan:</b> Kimyo
 ⏳ <b>Tajriba:</b> 3 yil
 👥 <b>O'quvchilar soni:</b> 250+
-💰 <b>To'lov:</b> 400.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 🎓 <b>Ma'lumoti:</b> Toshkent Kimyo Texnologiya Instituti
 
 📝 <b>BIOGRAFIYA:</b>
@@ -374,9 +373,8 @@ Yosh va kreativ yondashuvga ega kimyo o'qituvchisi. Darslarida zamonaviy pedagog
         "subject": "Kimyo",
         "experience": "2 yil",
         "students": "150+",
-        "price": "350.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Kimyoni sevib o'rganadigan va o'rgatadigan o'qituvchi. Individual yondashuv asosida ishlaydi.",
-      
         "info": """
 👨‍🏫 <b>O'QITUVCHI: ABDUVOHID</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -384,12 +382,11 @@ Yosh va kreativ yondashuvga ega kimyo o'qituvchisi. Darslarida zamonaviy pedagog
 🧪 <b>Fan:</b> Kimyo
 ⏳ <b>Tajriba:</b> 2 yil
 👥 <b>O'quvchilar soni:</b> 150+
-💰 <b>To'lov:</b> 350.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Kimyoni sevib o'rganadigan va o'rgatadigan o'qituvchi. Individual yondashuv asosida ishlaydi. Har bir o'quvchining o'zlashtirish darajasiga qarab dars o'tadi.
 
-📞 <b>Bog'lanish:</b>
 
 """
     },
@@ -400,9 +397,8 @@ Kimyoni sevib o'rganadigan va o'rgatadigan o'qituvchi. Individual yondashuv asos
         "subject": "Rus tili",
         "experience": "4 yil",
         "students": "300+",
-        "price": "400.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Rus tilini 0 dan boshlab, mukammal darajagacha o'rgatadi. Suhbatlashish amaliyotiga alohida e'tibor beradi.",
-    
         "info": """
 👨‍🏫 <b>O'QITUVCHI: JO'RAYEV BEKZOD</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -410,7 +406,7 @@ Kimyoni sevib o'rganadigan va o'rgatadigan o'qituvchi. Individual yondashuv asos
 🇷🇺 <b>Fan:</b> Rus tili
 ⏳ <b>Tajriba:</b> 4 yil
 👥 <b>O'quvchilar soni:</b> 300+
-💰 <b>To'lov:</b> 400.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Rus tilini 0 dan boshlab, mukammal darajagacha o'rgatadi. Suhbatlashish amaliyotiga alohida e'tibor beradi. Darslarda audio va video materiallardan foydalanadi.
@@ -419,8 +415,7 @@ Rus tilini 0 dan boshlab, mukammal darajagacha o'rgatadi. Suhbatlashish amaliyot
 • 100+ o'quvchisi rus tilida erkin suhbatlasha oladi
 • 50+ o'quvchisi Rossiyada ta'lim olmoqda
 
-📞 <b>Bog'lanish:</b>
-• Telegram: @jorayev_rus
+
 """
     },
     "rus_azimov": {
@@ -428,9 +423,8 @@ Rus tilini 0 dan boshlab, mukammal darajagacha o'rgatadi. Suhbatlashish amaliyot
         "subject": "Rus tili",
         "experience": "3 yil",
         "students": "200+",
-        "price": "350.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Rus tilini oson va tushunarli usulda o'rgatadi. Grammatikani hayotiy misollar bilan tushuntiradi.",
-      
         "info": """
 👨‍🏫 <b>O'QITUVCHI: AZIMOV AZIZBEK</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -438,13 +432,12 @@ Rus tilini 0 dan boshlab, mukammal darajagacha o'rgatadi. Suhbatlashish amaliyot
 🇷🇺 <b>Fan:</b> Rus tili
 ⏳ <b>Tajriba:</b> 3 yil
 👥 <b>O'quvchilar soni:</b> 200+
-💰 <b>To'lov:</b> 350.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Rus tilini oson va tushunarli usulda o'rgatadi. Grammatikani hayotiy misollar bilan tushuntiradi. Darslar interaktiv va qiziqarli o'tadi.
 
-📞 <b>Bog'lanish:</b>
-• Telegram: @azimov_rus
+
 """
     },
     
@@ -454,10 +447,9 @@ Rus tilini oson va tushunarli usulda o'rgatadi. Grammatikani hayotiy misollar bi
         "subject": "Ingliz tili",
         "experience": "5 yil",
         "students": "500+",
-        "price": "500.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "IELTS 7.5 sertifikatiga ega, ingliz tilini zamonaviy metodika asosida o'rgatadi. Suhbatlashish klubi tashkilotchisi.",
-     
-        "certificates": "IELTS 7.5, TEFL",
+        "certificates": "IELTS 7.5",
         "info": """
 👨‍🏫 <b>O'QITUVCHI: ROZIQOV DILSHODBEK</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -465,8 +457,8 @@ Rus tilini oson va tushunarli usulda o'rgatadi. Grammatikani hayotiy misollar bi
 🇬🇧 <b>Fan:</b> Ingliz tili
 ⏳ <b>Tajriba:</b> 5 yil
 👥 <b>O'quvchilar soni:</b> 500+
-💰 <b>To'lov:</b> 500.000 so'm/oy
-📜 <b>Sertifikatlari:</b> IELTS 7.5, TEFL
+💰 <b>To'lov:</b> 300.000 so'm/oy
+📜 <b>Sertifikatlari:</b> IELTS 7.5
 
 📝 <b>BIOGRAFIYA:</b>
 IELTS 7.5 sertifikatiga ega, ingliz tilini zamonaviy metodika asosida o'rgatadi. Suhbatlashish klubi tashkilotchisi. Darslarida faqat ingliz tilida so'zlashadi.
@@ -475,8 +467,7 @@ IELTS 7.5 sertifikatiga ega, ingliz tilini zamonaviy metodika asosida o'rgatadi.
 • 100+ o'quvchisi IELTS 6.5+ olgan
 • 50+ o'quvchisi chet elda ta'lim olmoqda
 
-📞 <b>Bog'lanish:</b>
-• Telegram: @roziqov_english
+
 """
     },
     "ingliz_rejavaliyev": {
@@ -484,9 +475,8 @@ IELTS 7.5 sertifikatiga ega, ingliz tilini zamonaviy metodika asosida o'rgatadi.
         "subject": "Ingliz tili",
         "experience": "4 yil",
         "students": "350+",
-        "price": "450.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Ingliz tilini o'rgatishda kommunikativ metodikani qo'llaydi. Darslari do'stona va samimiy muhitda o'tadi.",
-      
         "info": """
 👨‍🏫 <b>O'QITUVCHI: REJAVALIYEV NODIRBEK</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -494,7 +484,7 @@ IELTS 7.5 sertifikatiga ega, ingliz tilini zamonaviy metodika asosida o'rgatadi.
 🇬🇧 <b>Fan:</b> Ingliz tili
 ⏳ <b>Tajriba:</b> 4 yil
 👥 <b>O'quvchilar soni:</b> 350+
-💰 <b>To'lov:</b> 450.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Ingliz tilini o'rgatishda kommunikativ metodikani qo'llaydi. Darslari do'stona va samimiy muhitda o'tadi. Har bir o'quvchi bilan individual shug'ullanadi.
@@ -508,10 +498,9 @@ Ingliz tilini o'rgatishda kommunikativ metodikani qo'llaydi. Darslari do'stona v
         "subject": "Ingliz tili",
         "experience": "3 yil",
         "students": "250+",
-        "price": "400.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Yosh va energiyaga to'la o'qituvchi. Ingliz tilini o'yinlar va qiziqarli topshiriqlar orqali o'rgatadi.",
         "phone": "+998908901234",
-      
         "info": """
 👨‍🏫 <b>O'QITUVCHI: RAHMATOV BEKZOD</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -519,7 +508,7 @@ Ingliz tilini o'rgatishda kommunikativ metodikani qo'llaydi. Darslari do'stona v
 🇬🇧 <b>Fan:</b> Ingliz tili
 ⏳ <b>Tajriba:</b> 3 yil
 👥 <b>O'quvchilar soni:</b> 250+
-💰 <b>To'lov:</b> 400.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Yosh va energiyaga to'la o'qituvchi. Ingliz tilini o'yinlar va qiziqarli topshiriqlar orqali o'rgatadi. Darslari hech qachon zerikarli o'tmaydi.
@@ -533,9 +522,8 @@ Yosh va energiyaga to'la o'qituvchi. Ingliz tilini o'yinlar va qiziqarli topshir
         "subject": "Ingliz tili",
         "experience": "4 yil",
         "students": "300+",
-        "price": "450.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Akademik ingliz tili va IELTS yo'nalishida ixtisoslashgan o'qituvchi. Ko'plab o'quvchilari yuqori ballarni qo'lga kiritgan.",
-       
         "info": """
 👨‍🏫 <b>O'QITUVCHI: ABDUSATAROV DILMUHAMMAD</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -543,7 +531,7 @@ Yosh va energiyaga to'la o'qituvchi. Ingliz tilini o'yinlar va qiziqarli topshir
 🇬🇧 <b>Fan:</b> Ingliz tili
 ⏳ <b>Tajriba:</b> 4 yil
 👥 <b>O'quvchilar soni:</b> 300+
-💰 <b>To'lov:</b> 450.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Akademik ingliz tili va IELTS yo'nalishida ixtisoslashgan o'qituvchi. Ko'plab o'quvchilari yuqori ballarni qo'lga kiritgan. Har bir o'quvchi uchun individual strategiya ishlab chiqadi.
@@ -557,9 +545,8 @@ Akademik ingliz tili va IELTS yo'nalishida ixtisoslashgan o'qituvchi. Ko'plab o'
         "subject": "Ingliz tili",
         "experience": "3 yil",
         "students": "200+",
-        "price": "400.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Bolalar va o'smirlar bilan ishlash bo'yicha mutaxassis. Ingliz tilini sevib o'rganishga yordam beradi.",
-
         "info": """
 👩‍🏫 <b>O'QITUVCHI: JAMOLOVA HILOLA</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -567,7 +554,7 @@ Akademik ingliz tili va IELTS yo'nalishida ixtisoslashgan o'qituvchi. Ko'plab o'
 🇬🇧 <b>Fan:</b> Ingliz tili
 ⏳ <b>Tajriba:</b> 3 yil
 👥 <b>O'quvchilar soni:</b> 200+
-💰 <b>To'lov:</b> 400.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Bolalar va o'smirlar bilan ishlash bo'yicha mutaxassis. Ingliz tilini sevib o'rganishga yordam beradi. Darslarida ko'plab interaktiv metodlardan foydalanadi.
@@ -583,9 +570,8 @@ Bolalar va o'smirlar bilan ishlash bo'yicha mutaxassis. Ingliz tilini sevib o'rg
         "subject": "Biologiya",
         "experience": "6 yil",
         "students": "600+",
-        "price": "500.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Biologiya fanini chuqur biladigan va o'quvchilarni tibbiyotga tayyorlaydigan tajribali o'qituvchi.",
-       
         "info": """
 👨‍🏫 <b>O'QITUVCHI: NAZIROV HUSANXON</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -593,7 +579,7 @@ Bolalar va o'smirlar bilan ishlash bo'yicha mutaxassis. Ingliz tilini sevib o'rg
 🧬 <b>Fan:</b> Biologiya
 ⏳ <b>Tajriba:</b> 6 yil
 👥 <b>O'quvchilar soni:</b> 600+
-💰 <b>To'lov:</b> 500.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Biologiya fanini chuqur biladigan va o'quvchilarni tibbiyotga tayyorlaydigan tajribali o'qituvchi. DTM va milliy sertifikat imtihonlariga tayyorlash bo'yicha mutaxassis.
@@ -611,9 +597,8 @@ Biologiya fanini chuqur biladigan va o'quvchilarni tibbiyotga tayyorlaydigan taj
         "subject": "Biologiya",
         "experience": "5 yil",
         "students": "450+",
-        "price": "450.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Biologiyani mantiqiy tahlil qilish asosida o'rgatadi. Murakkab mavzularni sodda tushuntiradi.",
-        
         "info": """
 👨‍🏫 <b>O'QITUVCHI: NAZIROV HASANXON</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -621,10 +606,10 @@ Biologiya fanini chuqur biladigan va o'quvchilarni tibbiyotga tayyorlaydigan taj
 🧬 <b>Fan:</b> Biologiya
 ⏳ <b>Tajriba:</b> 5 yil
 👥 <b>O'quvchilar soni:</b> 450+
-💰 <b>To'lov:</b> 450.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
-Biologiyani mantiqiy tahlil qilish asosida o'rgatadi. Murakkab mavzularни sodda tushuntiradi. Darslarida ko'plab diagramma va jadvallardan foydalanadi.
+Biologiyani mantiqiy tahlil qilish asosida o'rgatadi. Murakkab mavzularni sodda tushuntiradi. Darslarida ko'plab diagramma va jadvallardan foydalanadi.
 
 📞 <b>Bog'lanish:</b>
 
@@ -635,9 +620,8 @@ Biologiyani mantiqiy tahlil qilish asosida o'rgatadi. Murakkab mavzularни sodd
         "subject": "Biologiya",
         "experience": "4 yil",
         "students": "300+",
-        "price": "400.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Biologiya fanini hayot bilan bog'lab o'rgatadi. Amaliy mashg'ulotlarga alohida e'tibor beradi.",
-       
         "info": """
 👨‍🏫 <b>O'QITUVCHI: MAMUROV ORTIQALI</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -645,7 +629,7 @@ Biologiyani mantiqiy tahlil qilish asosida o'rgatadi. Murakkab mavzularни sodd
 🧬 <b>Fan:</b> Biologiya
 ⏳ <b>Tajriba:</b> 4 yil
 👥 <b>O'quvchilar soni:</b> 300+
-💰 <b>To'lov:</b> 400.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Biologiya fanini hayot bilan bog'lab o'rgatadi. Amaliy mashg'ulotlarga alohida e'tibor beradi. O'quvchilari fan olimpiadalarida faxrli o'rinlarni egallagan.
@@ -659,9 +643,8 @@ Biologiya fanini hayot bilan bog'lab o'rgatadi. Amaliy mashg'ulotlarga alohida e
         "subject": "Biologiya",
         "experience": "3 yil",
         "students": "200+",
-        "price": "350.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Yosh va bilimli biologiya o'qituvchisi. Darslari qiziqarli va mazmunli o'tadi.",
-      
         "info": """
 👨‍🏫 <b>O'QITUVCHI: JUMANAZAR DOMLA</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -669,7 +652,7 @@ Biologiya fanini hayot bilan bog'lab o'rgatadi. Amaliy mashg'ulotlarga alohida e
 🧬 <b>Fan:</b> Biologiya
 ⏳ <b>Tajriba:</b> 3 yil
 👥 <b>O'quvchilar soni:</b> 200+
-💰 <b>To'lov:</b> 350.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Yosh va bilimli biologiya o'qituvchisi. Darslari qiziqarli va mazmunli o'tadi. Zamonaviy pedagogik texnologiyalarni qo'llaydi.
@@ -684,10 +667,9 @@ Yosh va bilimli biologiya o'qituvchisi. Darslari qiziqarli va mazmunli o'tadi. Z
         "subject": "Nemis tili",
         "experience": "4 yil",
         "students": "150+",
-        "price": "400.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Nemis tilini 0 dan boshlab, Goethe-Zertifikat darajasigacha tayyorlaydi. Germaniyada ta'lim olish istagidagilar uchun.",
-        
-        "certificates": "Goethe-Zertifikat C1",
+        "certificates": " C1",
         "info": """
 👨‍🏫 <b>O'QITUVCHI: QOBULOV ABDURAHIM</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -695,8 +677,8 @@ Yosh va bilimli biologiya o'qituvchisi. Darslari qiziqarli va mazmunli o'tadi. Z
 🇩🇪 <b>Fan:</b> Nemis tili
 ⏳ <b>Tajriba:</b> 4 yil
 👥 <b>O'quvchilar soni:</b> 150+
-💰 <b>To'lov:</b> 400.000 so'm/oy
-📜 <b>Sertifikati:</b> Goethe-Zertifikat C1
+💰 <b>To'lov:</b> 300.000 so'm/oy
+📜 <b>Sertifikati:</b>  C1
 
 📝 <b>BIOGRAFIYA:</b>
 Nemis tilini 0 dan boshlab, Goethe-Zertifikat darajasigacha tayyorlaydi. Germaniyada ta'lim olish istagidagilar uchun ideal o'qituvchi.
@@ -709,21 +691,21 @@ Nemis tilini 0 dan boshlab, Goethe-Zertifikat darajasigacha tayyorlaydi. Germani
     "it_valiyev": {
         "name": "Valiyev Omadbek",
         "subject": "Kompyuter va IT",
-        "experience": "4 yil",
+        "experience": "3 yil",
         "students": "300+",
-        "price": "550.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Python, Telegram Bot, Web dasturlash bo'yicha mutaxassis. 100+ loyiha muallifi. Darslari amaliyotga asoslangan.",
         "phone": "+998907877157",
-        "telegram": "@Teacher_texno",
+        "telegram": "@Teacher_texnoo",
         "achievements": "100+ loyiha muallifi",
         "info": """
 👨‍🏫 <b>O'QITUVCHI: VALIYEV OMADBEK</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 💻 <b>Fan:</b> Kompyuter va IT (Python, Telegram Bot, Web)
-⏳ <b>Tajriba:</b> 4 yil
+⏳ <b>Tajriba:</b> 3 yil
 👥 <b>O'quvchilar soni:</b> 300+
-💰 <b>To'lov:</b> 550.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Python, Telegram Bot, Web dasturlash bo'yicha mutaxassis. 100+ loyiha muallifi. Darslari amaliyotga asoslangan. Har bir darsda real loyiha yozish.
@@ -734,7 +716,7 @@ Python, Telegram Bot, Web dasturlash bo'yicha mutaxassis. 100+ loyiha muallifi. 
 • 3 ta Telegram boti 10k+ foydalanuvchiga ega
 
 📞 <b>Bog'lanish:</b>
-• Telegram: @Teacher_texno
+• Telegram: @Teacher_texnoo
 """
     },
     
@@ -744,9 +726,8 @@ Python, Telegram Bot, Web dasturlash bo'yicha mutaxassis. 100+ loyiha muallifi. 
         "subject": "Ona tili",
         "experience": "7 yil",
         "students": "700+",
-        "price": "450.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Ona tili va adabiyoti fanining ustoz o'qituvchisi. DTM va milliy sertifikat imtihonlariga tayyorlash bo'yicha katta tajriba.",
-  
         "info": """
 👨‍🏫 <b>O'QITUVCHI: JAMALOV QOSIMXON</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -754,7 +735,7 @@ Python, Telegram Bot, Web dasturlash bo'yicha mutaxassis. 100+ loyiha muallifi. 
 📝 <b>Fan:</b> Ona tili
 ⏳ <b>Tajriba:</b> 7 yil
 👥 <b>O'quvchilar soni:</b> 700+
-💰 <b>To'lov:</b> 450.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Ona tili va adabiyoti fanining ustoz o'qituvchisi. DTM va milliy sertifikat imtihonlariga tayyorlash bo'yicha katta tajriba. O'quvchilari eng yuqori ballarni qo'lga kiritgan.
@@ -773,9 +754,8 @@ Ona tili va adabiyoti fanining ustoz o'qituvchisi. DTM va milliy sertifikat imti
         "subject": "Arab tili",
         "experience": "5 yil",
         "students": "200+",
-        "price": "450.000 so'm/oy",
-        "bio": "Arab tilini o'rgatish bo'yicha mutaxassis. Qur'on tilini o'rganish va arab tilida suhbatlashish amaliyoti.",
-       
+        "price": "300.000 so'm/oy",
+        "bio": "Arab tilini o'rgatish bo'yicha mutaxassis.  arab tili va arab tilida suhbatlashish amaliyoti.",
         "info": """
 👩‍🏫 <b>O'QITUVCHI: FARMONOVA GULBAHOR</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -783,7 +763,7 @@ Ona tili va adabiyoti fanining ustoz o'qituvchisi. DTM va milliy sertifikat imti
 🕌 <b>Fan:</b> Arab tili
 ⏳ <b>Tajriba:</b> 5 yil
 👥 <b>O'quvchilar soni:</b> 200+
-💰 <b>To'lov:</b> 450.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Arab tilini o'rgatish bo'yicha mutaxassis. Qur'on tilini o'rganish va arab tilida suhbatlashish amaliyoti. Darslarida zamonaviy metodikalarni qo'llaydi.
@@ -793,45 +773,21 @@ Arab tilini o'rgatish bo'yicha mutaxassis. Qur'on tilini o'rganish va arab tilid
     },
     
     # TARIX
-    "tarix_mahmudova": {
-        "name": "Mahmudova Gulhayo",
-        "subject": "Tarix",
-        "experience": "4 yil",
-        "students": "250+",
-        "price": "400.000 so'm/oy",
-        "bio": "Tarix fanini qiziqarli hikoyalar va faktlar asosida o'rgatadi. Xronologik ketma-ketlikka alohida e'tibor beradi.",
-        "phone": "+998910111213",
-        "telegram": "@mahmudova_tarix",
-        "info": """
-👩‍🏫 <b>O'QITUVCHI: MAHMUDOVA GULHAYO</b>
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📜 <b>Fan:</b> Tarix
-⏳ <b>Tajriba:</b> 4 yil
-👥 <b>O'quvchilar soni:</b> 250+
-💰 <b>To'lov:</b> 400.000 so'm/oy
-
-📝 <b>BIOGRAFIYA:</b>
-Tarix fanini qiziqarli hikoyalar va faktlar asosida o'rgatadi. Xronologik ketma-ketlikka alohida e'tibor beradi. Darslari hech qachon zerikarli o'tmaydi.
-
-"""
-    },
     "tarix_botirova": {
         "name": "Botirova Gulyora",
         "subject": "Tarix",
-        "experience": "3 yil",
+        "experience": " 1 yil",
         "students": "200+",
-        "price": "350.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Jahon va O'zbekiston tarixi bo'yicha mutaxassis. Darslarida xarita va diagrammalardan foydalanadi.",
-      
         "info": """
 👩‍🏫 <b>O'QITUVCHI: BOTIROVA GULYORA</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📜 <b>Fan:</b> Tarix
-⏳ <b>Tajriba:</b> 3 yil
+⏳ <b>Tajriba:</b> 1 yil
 👥 <b>O'quvchilar soni:</b> 200+
-💰 <b>To'lov:</b> 350.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Jahon va O'zbekiston tarixi bo'yicha mutaxassis. Darslarida xarita va diagrammalardan foydalanadi. Tarixiy voqealarni sabab-natija bog'liqligida tushuntiradi.
@@ -842,16 +798,16 @@ Jahon va O'zbekiston tarixi bo'yicha mutaxassis. Darslarida xarita va diagrammal
     "tarix_soliyeva": {
         "name": "Soliyeva Marjona",
         "subject": "Tarix",
-        "experience": "2 yil",
+        "experience": "1 yil",
         "students": "150+",
         "price": "300.000 so'm/oy",
         "bio": "Yosh va g'ayratli tarix o'qituvchisi. Darslari interaktiv va zamonaviy usulda o'tadi.",
-             "info": """
+        "info": """
 👩‍🏫 <b>O'QITUVCHI: SOLIYEVA MARJONA</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📜 <b>Fan:</b> Tarix
-⏳ <b>Tajriba:</b> 2 yil
+⏳ <b>Tajriba:</b> 1 yil
 👥 <b>O'quvchilar soni:</b> 150+
 💰 <b>To'lov:</b> 300.000 so'm/oy
 
@@ -868,17 +824,17 @@ Yosh va g'ayratli tarix o'qituvchisi. Darslari interaktiv va zamonaviy usulda o'
         "subject": "Matematika",
         "experience": "8 yil",
         "students": "1000+",
-        "price": "600.000 so'm/oy",
+        "price": "300.000 so'm/oy",
         "bio": "Matematika fanining ustoz o'qituvchisi. DTM, milliy sertifikat va xalqaro imtihonlarga tayyorlash bo'yicha eng katta tajriba.",
-               "achievements": "1000+ o'quvchi, 200+ olimpiada g'oliblari",
+        "achievements": "1000+ o'quvchi, 200+ olimpiada g'oliblari",
         "info": """
 👨‍🏫 <b>O'QITUVCHI: SAIDAFZALXON</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ➗ <b>Fan:</b> Matematika
-⏳ <b>Tajriba:</b> 8 yil
+⏳ <b>Tajriba:</b> 5 yil
 👥 <b>O'quvchilar soni:</b> 1000+
-💰 <b>To'lov:</b> 600.000 so'm/oy
+💰 <b>To'lov:</b> 300.000 so'm/oy
 
 📝 <b>BIOGRAFIYA:</b>
 Matematika fanining ustoz o'qituvchisi. DTM, milliy sertifikat va xalqaro imtihonlarga tayyorlash bo'yicha eng katta tajriba. Murakkab masalalarni oson usulda yechish sirlarini o'rgatadi.
@@ -893,7 +849,6 @@ Matematika fanining ustoz o'qituvchisi. DTM, milliy sertifikat va xalqaro imtiho
 """
     }
 }
-
 # === O'QITUVCHILARNI FANLAR BO'YICHA GURUHLASH ===
 def get_teachers_by_subject(subject):
     """Fan bo'yicha o'qituvchilarni qaytaradi"""
